@@ -2,8 +2,8 @@
 
 namespace flowcode\orm\builder;
 
-require_once dirname(__FILE__) . '/../../../../../src/flowcode/mvc/kernel/Autoloader.class.php';
-require_once dirname(__FILE__) . '/../../../../../src/flowcode/orm/builder/MapperBuilder.class.php';
+use flowcode\demo\domain\Ovni;
+use flowcode\orm\builder\MapperBuilder;
 
 /**
  * Test class for MapperBuilder.
@@ -15,6 +15,7 @@ class MapperBuilderTest extends \PHPUnit_Framework_TestCase {
      * @var MapperBuilder
      */
     protected $object;
+    private $mappingFilePath;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -22,6 +23,7 @@ class MapperBuilderTest extends \PHPUnit_Framework_TestCase {
      */
     protected function setUp() {
         $this->object = new MapperBuilder;
+        $this->mappingFilePath = __DIR__ . "/../orm-mapping-test.xml";
     }
 
     /**
@@ -35,48 +37,30 @@ class MapperBuilderTest extends \PHPUnit_Framework_TestCase {
     /**
      * @covers flowcode\orm\builder\MapperBuilder::buildFromMapping
      */
-    public function testBuildFromMapping() {
+    public function testBuildFromMapping_noRelations_buildOk() {
 
-        $instance = new \flowcode\inter\domain\Poll();
-
-        $mappingFilePath = "/var/www/inter/src/flowcode/inter/config/orm-mapping.xml";
-        $mapping = simplexml_load_file($mappingFilePath);
+        $instance = new Ovni();
+        $mapping = simplexml_load_file($this->mappingFilePath);
 
         $mapper = $this->object->buildFromMapping($mapping, get_class($instance));
-        
-        $this->assertEquals(get_class($instance) ,$mapper->getClass());
-        $this->assertEquals("poll" ,$mapper->getTable());
-        
+
+        $this->assertEquals(get_class($instance), $mapper->getClass());
+        $this->assertEquals("ovni", $mapper->getTable());
     }
-    
-    public function testBuildFromMapping_Slider() {
 
-        $instance = new \flowcode\inter\domain\Slider();
-
-        $mappingFilePath = "/var/www/inter/src/flowcode/inter/config/orm-mapping.xml";
-        $mapping = simplexml_load_file($mappingFilePath);
-
-        $mapper = $this->object->buildFromMapping($mapping, get_class($instance));
-        
-        $this->assertEquals(get_class($instance) ,$mapper->getClass());
-        $this->assertEquals("slider" ,$mapper->getTable());
-        
-    }
-    
-    public function testBuildFormMapping_withRelations(){
+    public function testBuildFormMapping_withRelations() {
         $noticia = new \flowcode\inter\domain\Noticia();
-        
+
         $mappingFilePath = "/var/www/inter/src/flowcode/inter/config/orm-mapping.xml";
         $mapping = simplexml_load_file($mappingFilePath);
 
         $mapper = $this->object->buildFromMapping($mapping, get_class($noticia));
-        
-        $this->assertEquals(get_class($noticia) ,$mapper->getClass());
-        
-        $this->assertEquals(1 , count($mapper->getRelations()));
-        
+
+        $this->assertEquals(get_class($noticia), $mapper->getClass());
+
+        $this->assertEquals(1, count($mapper->getRelations()));
     }
-    
+
     public function testBuildFromName() {
 
         $instance = new \flowcode\inter\domain\Noticia();
@@ -85,10 +69,9 @@ class MapperBuilderTest extends \PHPUnit_Framework_TestCase {
         $mapping = simplexml_load_file($mappingFilePath);
 
         $mapper = $this->object->buildFromName($mapping, "noticia");
-        
-        $this->assertEquals(get_class($instance) ,$mapper->getClass());
-        $this->assertEquals("noticia" ,$mapper->getName());
-        
+
+        $this->assertEquals(get_class($instance), $mapper->getClass());
+        $this->assertEquals("noticia", $mapper->getName());
     }
 
 }

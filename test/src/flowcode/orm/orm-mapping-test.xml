@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<orm-mapping>
+
+    <entity name="ovni" class="flowcode\demo\domain\Ovni" table="ovni" >
+        <property name="Id" column="id"/>
+        <property name="Name" column="name"/>
+    </entity>
+
+    <entity name="noticia" class="flowcode\inter\domain\Noticia" table="noticia" >
+        <property name="Id" column="id"/>
+        <property name="Titulo" column="titulo"/>
+        <property name="Copete" column="Copete"/>
+        <relation entity="penia" name="Penias" table="noticia_penia" localColumn="id_noticia" foreignColumn="id_penia" cardinality="many-to-many" />
+    </entity>
+                
+    <entity name="penia" class="\flowcode\inter\domain\Penia" table="penia" >
+        <property name="Id" column="id"/>
+        <property name="Nombre" column="nombre"/>
+        <property name="Descripcion" column="descripcion"/>
+    </entity>
+                
+    <entity name="poll" class="flowcode\inter\domain\Poll" table="poll" >
+        <property name="Id" column="id"/>
+        <property name="Name" column="name"/>
+        <property name="Question" column="question"/>
+        <property name="DateBegin" column="date_begin"/>
+        <property name="DateEnd" column="date_end"/>
+        <relation entity="poll_option" name="Options" table="poll_option" localColumn="id" foreignColumn="id_poll" cardinality="one-to-many" />
+    </entity>
+                
+    <entity name="poll_option" class="flowcode\inter\domain\PollOption" table="poll_option" >
+        <property name="Id" column="id"/>
+        <property name="Name" column="name"/>
+        <property name="IdPoll" column="id_poll"/>
+    </entity>
+
+</orm-mapping>
