@@ -1,4 +1,4 @@
 smooth-orm
 ==========
 
-Light and simple orm for small to medium php projects
+Light and simple ORM for small to medium PHP projects

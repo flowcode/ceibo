@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<orm-mapping>
+
+    <entity name="barrio" class="flowcode\inter\domain\Barrio" table="barrio" >
+
+        <!-- properties -->
+        <property name="Id" column="id"/>
+        <property name="Nombre" column="nombre"/>
+        <property name="Descripcion" column="descripcion"/>
+        <property name="Texto" column="texto"/>
+        <property name="Logo" column="logo"/>
+        <property name="Mapa" column="mapa"/>
+
+    </entity>
+
+    <entity name="publicidad" class="flowcode\inter\domain\Publicidad" table="publicidad" >
+
+        <!-- properties -->
+        <property name="Id" column="id"/>
+        <property name="Nombre" column="nombre"/>
+        <property name="ContenidoHTML" column="contenido"/>
+        <property name="Tipo" column="tipo"/>
+        <property name="Estado" column="estado"/>
+        <property name="FechaHasta" column="fecha_hasta"/>
+        <property name="Clicks" column="clicks"/>
+        <property name="Orden" column="orden"/>
+
+    </entity>
+
+    <entity name="ciberFlyer" class="flowcode\inter\domain\CiberFlyer" table="ciber_flyer" >
+
+        <!-- properties -->
+        <property name="Id" column="id"/>
+        <property name="Nombre" column="nombre"/>
+        <property name="Path" column="path"/>
+        <property name="Fecha" column="fecha"/>
+        <property name="Estado" column="estado"/>
+
+    </entity>
+                
+    <entity name="noticia" class="flowcode\inter\domain\Noticia" table="noticia" >
+        <property name="Id" column="id"/>
+        <property name="Titulo" column="titulo"/>
+        <property name="Copete" column="Copete"/>
+        <relation entity="penia" name="Penias" table="noticia_penia" localColumn="id_noticia" foreignColumn="id_penia" cardinality="many-to-many" />
+    </entity>
+                
+    <entity name="penia" class="\flowcode\inter\domain\Penia" table="penia" >
+        <property name="Id" column="id"/>
+        <property name="Nombre" column="nombre"/>
+        <property name="Descripcion" column="descripcion"/>
+    </entity>
+                
+    <entity name="poll" class="flowcode\inter\domain\Poll" table="poll" >
+        <property name="Id" column="id"/>
+        <property name="Name" column="name"/>
+        <property name="Question" column="question"/>
+        <property name="DateBegin" column="date_begin"/>
+        <property name="DateEnd" column="date_end"/>
+        <relation entity="poll_option" name="Options" table="poll_option" localColumn="id" foreignColumn="id_poll" cardinality="one-to-many" />
+    </entity>
+                
+    <entity name="poll_option" class="flowcode\inter\domain\PollOption" table="poll_option" >
+        <property name="Id" column="id"/>
+        <property name="Name" column="name"/>
+        <property name="IdPoll" column="id_poll"/>
+    </entity>
+                
+    <entity name="poll_vote" class="flowcode\inter\domain\PollVote" table="poll_vote" >
+        <property name="Id" column="id"/>
+        <property name="IdPollOption" column="id_poll_option"/>
+        <property name="IdUser" column="id_user"/>
+    </entity>
+                
+    <entity name="slider" class="flowcode\inter\domain\Slider" table="slider" >
+
+        <!-- properties -->
+        <property name="Id" column="id"/>
+        <property name="Nombre" column="nombre"/>
+        <property name="Imagen" column="imagen"/>
+        <property name="ImagenSlotTop" column="imagen_slot_top"/>
+        <property name="ImagenSlotLeft" column="imagen_slot_left"/>
+        <property name="ImagenSlotSize" column="imagen_slot_size"/>
+        <property name="Texto" column="texto"/>
+        <property name="Link" column="link"/>
+        <property name="Orden" column="orden"/>
+
+    </entity>
+                
+    <entity name="faq" class="flowcode\inter\domain\Faq" table="faq" >
+        <property name="Id" column="id"/>
+        <property name="IdSeccion" column="id_seccion"/>
+        <property name="Pregunta" column="pregunta"/>
+        <property name="Respuesta" column="respuesta"/>
+    </entity>
+
+</orm-mapping>
