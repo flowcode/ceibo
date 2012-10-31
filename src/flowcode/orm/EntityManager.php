@@ -1,26 +1,34 @@
 <?php
 
-namespace flowcode\orm\support;
+namespace flowcode\orm;
 
 use flowcode\orm\builder\MapperBuilder;
 use flowcode\orm\data\DataSource;
 use flowcode\orm\domain\Relation;
 
 /**
- * Description of DaoSupport.
+ * Description of EntityManager
  *
- * @author juanma
+ * @author JMA <jaguero@flowcode.com.ar>
  */
-class DaoSupport {
+class EntityManager {
 
+    private static $instance;
     private $conn;
     private $mappingFilePath;
     private $mapping;
 
-    public function __construct() {
+    private function __construct() {
         $this->conn = new DataSource();
-        $this->mappingFilePath = dirname(__FILE__) . "/../../../../orm-mapping.xml";
+        $this->mappingFilePath = dirname(__FILE__) . "/../../../orm-mapping.xml";
         $this->mapping = simplexml_load_file($this->mappingFilePath);
+    }
+
+    public static function getInstance() {
+        if (empty(self::$instance)) {
+            self::$instance = new EntityManager();
+        }
+        return self::$instance;
     }
 
     /**
@@ -229,11 +237,11 @@ class DaoSupport {
         $mapper = MapperBuilder::buildFromMapping($this->mapping, get_class($entity));
 
         $query = "SELECT * FROM `" . $mapper->getTable() . "` ";
-        if(!is_null($ordenColumn)){
+        if (!is_null($ordenColumn)) {
             $query .= "ORDER BY $ordenColumn ";
-            if(!is_null($ordenType)){
+            if (!is_null($ordenType)) {
                 $query .= "$ordenType";
-            }  else {
+            } else {
                 $query .= "ASC";
             }
         }

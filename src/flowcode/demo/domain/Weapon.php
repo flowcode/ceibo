@@ -3,18 +3,20 @@
 namespace flowcode\demo\domain;
 
 /**
- * Description of Ovni
+ * Description of Weapon
  *
  * @author JMA <jaguero@flowcode.com.ar>
  */
-class Ovni {
+class Weapon {
 
     private $id;
     private $name;
-    private $weapons;
 
-    public function __construct() {
-        $this->weapons = array();
+    function __construct($id = NULL, $name = NULL) {
+        if (!is_null($id))
+            $this->id = $id;
+        if (!is_null($name))
+            $this->name = $name;
     }
 
     public function getId() {
@@ -31,18 +33,6 @@ class Ovni {
 
     public function setName($name) {
         $this->name = $name;
-    }
-
-    public function getWeapons() {
-        return $this->weapons;
-    }
-
-    public function setWeapons($weapons) {
-        $this->weapons = $weapons;
-    }
-
-    public function addWeapon(Weapon $weapon) {
-        $this->weapons[] = $weapon;
     }
 
 }

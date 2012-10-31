@@ -49,29 +49,29 @@ class MapperBuilderTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testBuildFormMapping_withRelations() {
-        $noticia = new \flowcode\inter\domain\Noticia();
+        $ovni = new Ovni();
 
-        $mappingFilePath = "/var/www/inter/src/flowcode/inter/config/orm-mapping.xml";
+        $mappingFilePath = dirname(__FILE__) . "/../orm-mapping-test.xml";
         $mapping = simplexml_load_file($mappingFilePath);
 
-        $mapper = $this->object->buildFromMapping($mapping, get_class($noticia));
+        $mapper = $this->object->buildFromMapping($mapping, get_class($ovni));
 
-        $this->assertEquals(get_class($noticia), $mapper->getClass());
+        $this->assertEquals(get_class($ovni), $mapper->getClass());
 
         $this->assertEquals(1, count($mapper->getRelations()));
     }
 
     public function testBuildFromName() {
 
-        $instance = new \flowcode\inter\domain\Noticia();
-
-        $mappingFilePath = "/var/www/inter/src/flowcode/inter/config/orm-mapping.xml";
+        $instance = new \flowcode\demo\domain\Weapon(1, "lazer");
+        $mappingFilePath = dirname(__FILE__) . "/../orm-mapping-test.xml";
         $mapping = simplexml_load_file($mappingFilePath);
 
-        $mapper = $this->object->buildFromName($mapping, "noticia");
-
+        $mapper = $this->object->buildFromName($mapping, "weapon");
+        $raw = array("id" => 1, "name" => "lazer");
         $this->assertEquals(get_class($instance), $mapper->getClass());
-        $this->assertEquals("noticia", $mapper->getName());
+        $this->assertEquals("weapon", $mapper->getName());
+        $this->assertNotNull($mapper->createObject($raw));
     }
 
 }

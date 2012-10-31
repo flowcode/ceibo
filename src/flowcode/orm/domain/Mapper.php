@@ -80,8 +80,17 @@ class Mapper {
         $this->name = $name;
     }
 
+    public function createObject($raw) {
+        $entity = new $this->class;
+        foreach ($raw as $key => $value) {
+            if ($this->getNameForColumn($key) != NULL) {
+                $method = "set" . $this->getNameForColumn($key);
+                $entity->$method($value);
+            }
+        }
+        return $entity;
+    }
 
-    
 }
 
 ?>

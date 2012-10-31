@@ -14,7 +14,12 @@ class ClassAutoloader {
 
     private function loader($className) {
         $params = explode('\\', $className);
-        $filename = __DIR__ . '/../src/flowcode/' . $params[1] . '/' . $params[2] . '/' . $params[3] . '.php';
+        $filename = __DIR__ . '/../src';
+        foreach ($params as $dir) {
+            $filename .= "/" . $dir;
+        }
+        $filename .= ".php";
+
         include $filename;
     }
 
