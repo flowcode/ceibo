@@ -21,6 +21,12 @@ class Collection implements Iterator {
     private $objects = array();
     private $targetClass;
 
+    /**
+     * New Collection instance.
+     * @param type $targetClass
+     * @param array $raw
+     * @param \flowcode\orm\domain\Mapper $mapper
+     */
     function __construct($targetClass, array $raw = NULL, Mapper $mapper = NULL) {
         if (!is_null($raw) && !is_null($mapper)) {
             $this->raw = $raw;

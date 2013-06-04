@@ -20,15 +20,16 @@ class CollectionTest extends PHPUnit_Framework_TestCase {
      * This method is called before a test is executed.
      */
     protected function setUp() {
-        $this->raw[] = array("id" => 1, "name" => "lazer");
+        $this->raw = array(
+            array("id" => 1, "name" => "lazer"),
+        );
 
         $class = "\\flowcode\\demo\\domain\\Weapon";
 
         $mappingFilePath = dirname(__FILE__) . "/../orm-mapping-test.xml";
         $mapping = simplexml_load_file($mappingFilePath);
 
-        $mapper = MapperBuilder::buildFromMapping($mapping, $class);
-
+        $mapper = MapperBuilder::buildFromName($mapping, "weapon");
         $this->object = new Collection($class, $this->raw, $mapper);
     }
 
@@ -45,15 +46,13 @@ class CollectionTest extends PHPUnit_Framework_TestCase {
      * @todo   Implement testAdd().
      */
     public function testAdd() {
-        $weapon1 = new Weapon(2, "lazer");
+        $weapon1 = new Weapon(2, "zord");
         $this->object->add($weapon1);
-        //$this->assertEquals(2, $this->object->count());
-        //$this->assertEquals(0, $this->object->key());
-        //$this->assertTrue($this->object->valid());
-        
-        $w = $this->object->current();
-        print_r($w);
-        $this->assertEquals("lazer", $w->getName());
+
+        $weaponInCollection = $this->object->current();
+        $this->assertEquals(1, $weaponInCollection->getId());
+        $this->assertEquals("lazer", $weaponInCollection->getName());
+        $this->assertEquals(2, $this->object->count());
     }
 
     /**
@@ -61,21 +60,7 @@ class CollectionTest extends PHPUnit_Framework_TestCase {
      * @todo   Implement testGetTargetClass().
      */
     public function testGetTargetClass() {
-        // Remove the following lines when you implement this test.
-        $this->markTestIncomplete(
-                'This test has not been implemented yet.'
-        );
-    }
-
-    /**
-     * @covers Collection::setTargetClass
-     * @todo   Implement testSetTargetClass().
-     */
-    public function testSetTargetClass() {
-        // Remove the following lines when you implement this test.
-        $this->markTestIncomplete(
-                'This test has not been implemented yet.'
-        );
+        $this->assertEquals("\\flowcode\\demo\\domain\\Weapon", $this->object->getTargetClass());
     }
 
     /**
@@ -94,10 +79,17 @@ class CollectionTest extends PHPUnit_Framework_TestCase {
      * @todo   Implement testCurrent().
      */
     public function testCurrent() {
-        // Remove the following lines when you implement this test.
-        $this->markTestIncomplete(
-                'This test has not been implemented yet.'
-        );
+        $weapon1 = new Weapon(2, "zord");
+        $this->object->add($weapon1);
+        $weapon2 = new Weapon(3, "lazer 2");
+        $this->object->add($weapon2);
+
+        $this->object->next();
+        $this->assertEquals(2, $this->object->current()->getId());
+        
+        $this->object->next();
+        $this->assertEquals(3, $this->object->current()->getId());
+
     }
 
     /**
@@ -116,10 +108,9 @@ class CollectionTest extends PHPUnit_Framework_TestCase {
      * @todo   Implement testNext().
      */
     public function testNext() {
-        // Remove the following lines when you implement this test.
-        $this->markTestIncomplete(
-                'This test has not been implemented yet.'
-        );
+        $weaponInCollection = $this->object->next();
+        $this->assertEquals(1, $weaponInCollection->getId());
+        $this->assertEquals("lazer", $weaponInCollection->getName());
     }
 
     /**
