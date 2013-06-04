@@ -228,6 +228,16 @@ class EntityManager {
         return $query;
     }
 
+    public function buildJoinRelationQuery(Relation $relation, $mainSynonym, $joinSynonym) {
+        $query = "";
+        if ($relation->getCardinality() == Relation::$manyToMany) {
+            $query .= "INNER JOIN " . $relation->getTable() . " $joinSynonym ";
+            $query .= "ON $joinSynonym." . $relation->getForeignColumn() . " = " . $mainSynonym . ".id ";
+        }
+
+        return $query;
+    }
+
     /**
      * Return an array of all entitys.
      * @param object $entity
