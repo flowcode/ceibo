@@ -13,7 +13,7 @@ use flowcode\orm\support\TestCase;
  * Description of PDOMySqlDataSourceTest
  *
  * @author Juan Manuel Agüero <jaguero@flowcode.com.ar>
- * @group need-db
+ * @group database
  */
 class PDOMySqlDataSourceTest extends TestCase {
 
@@ -22,13 +22,9 @@ class PDOMySqlDataSourceTest extends TestCase {
 
     protected function setUp() {
 
-        $this->markTestSkipped(
-                'DataBase connection is needed.'
-        );
-
         /* setup connection */
         $this->instance = new PDOMySqlDataSource();
-        $this->instance->setDbDsn("mysql:host=localhost;dbname=wing-orm-test");
+        $this->instance->setDbDsn("mysql:host=localhost;dbname=wing-orm-test*");
         $this->instance->setDbUser("root");
         $this->instance->setDbPass("root");
 

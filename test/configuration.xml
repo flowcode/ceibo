@@ -1,24 +1,11 @@
 <?xml version="1.0"?>
 
-<phpunit backupGlobals="false"
-         backupStaticAttributes="false"
-         colors="true"
-         convertErrorsToExceptions="true"
-         convertNoticesToExceptions="true"
-         convertWarningsToExceptions="true"
-         processIsolation="false"
-         stopOnFailure="false"
-         syntaxCheck="false"
-         bootstrap="bootstrap.php"
->
+<phpunit bootstrap="bootstrap.php">
 
-    <testsuites>
-        <testsuite name="Builder Test Suite">
-            <directory>./test/src/flowcode/orm/builder</directory>
-        </testsuite>
-        <testsuite name="Domain Test Suite">
-            <directory>./test/src/flowcode/orm/domain</directory>
-        </testsuite>
-    </testsuites>
+    <groups>
+        <exclude>
+            <group>database</group>
+        </exclude>
+    </groups>
     
 </phpunit>
