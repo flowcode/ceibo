@@ -22,9 +22,9 @@ class PDOMySqlDataSourceTest extends TestCase {
 
     protected function setUp() {
 
-//        $this->markTestSkipped(
-//                'DataBase connection is needed.'
-//        );
+        $this->markTestSkipped(
+                'DataBase connection is needed.'
+        );
 
         /* setup connection */
         $this->instance = new PDOMySqlDataSource();
