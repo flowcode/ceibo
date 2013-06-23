@@ -1,11 +1,13 @@
 <?xml version="1.0"?>
 
-<phpunit bootstrap="bootstrap.php">
+<phpunit bootstrap="bootstrap.php" colors="true">
 
-    <groups>
-        <exclude>
-            <group>database</group>
-        </exclude>
-    </groups>
-    
+    <testsuites>
+        <testsuite name="main test suite">
+            <directory>../test</directory>
+            <exclude>test/src/flowcode/orm/data</exclude>
+        </testsuite>
+    </testsuites>
+ 
+   
 </phpunit>
