@@ -1,4 +1,4 @@
 language: php
 php:
   - "5.3"
-script: "phpunit --configuration 'test/configuration.xml' test/"
+script: "phpunit --configuration 'test/configuration.xml' --exclude-group need-db test"
