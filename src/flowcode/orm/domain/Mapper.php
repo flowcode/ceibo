@@ -15,10 +15,12 @@ class Mapper {
     private $propertys;
     private $relations;
     private $mapping;
+    private $filters;
 
     public function __construct() {
         $this->relations = array();
         $this->propertys = array();
+        $this->filters = array();
     }
 
     public function getNameForColumn($column) {
@@ -89,6 +91,48 @@ class Mapper {
             }
         }
         return $entity;
+    }
+
+    /**
+     * Get a relation bby its name.
+     * @param string $relationName
+     * @return Relation
+     */
+    public function getRelation($relationName) {
+        $relationInstance = null;
+        if (isset($this->relations[$relationName])) {
+            $relationInstance = $this->relations[$relationName];
+        }
+        return $relationInstance;
+    }
+    
+    public function getProperty($propertyName) {
+        $propertyInstance = null;
+        if (isset($this->propertys[$propertyName])) {
+            $propertyInstance = $this->propertys[$propertyName];
+        }
+        return $propertyInstance;
+    }
+
+    /**
+     * Return the filter or null.
+     * @param String $filtername
+     * @return Filter $filter.
+     */
+    public function getFilter($filtername) {
+        $filter = null;
+        if (!is_null($this->filters) && isset($this->filters[$filtername])) {
+            $filter = $this->filters[$filtername];
+        }
+        return $filter;
+    }
+
+    public function getFilters() {
+        return $this->filters;
+    }
+
+    public function setFilters($filters) {
+        $this->filters = $filters;
     }
 
 }
