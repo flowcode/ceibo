@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<orm-mapping>
+<ceibo-mapping>
 
     <entity name="ovni" class="flowcode\demo\domain\Ovni" table="ovni" >
         <property name="Id" column="id"/>
@@ -24,4 +24,4 @@
         <property name="IdPoll" column="id_poll"/>
     </entity>
 
-</orm-mapping>
+</ceibo-mapping>
