@@ -12,6 +12,11 @@ class Property {
     private $name;
     private $column;
 
+    /**
+     * 
+     * @param type $name
+     * @param type $column
+     */
     function __construct($name, $column) {
         $this->name = $name;
         $this->column = $column;

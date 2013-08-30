@@ -3,8 +3,12 @@
 namespace flowcode\orm;
 
 use flowcode\orm\builder\MapperBuilder;
+use flowcode\orm\builder\QueryBuilder;
 use flowcode\orm\data\DataSource;
+use flowcode\orm\domain\Collection;
 use flowcode\orm\domain\Relation;
+use flowcode\orm\EntityManager;
+use flowcode\wing\utils\Pager;
 
 /**
  * Description of EntityManager
@@ -14,14 +18,23 @@ use flowcode\orm\domain\Relation;
 class EntityManager {
 
     private static $instance;
-    private $conn;
-    private $mappingFilePath;
-    private $mapping;
+    private $conn = NULL;
+    private $mappingFilePath = NULL;
+    private $mapping = NULL;
 
-    private function __construct() {
-        $this->conn = new DataSource();
-        $this->mappingFilePath = dirname(__FILE__) . "/../../../orm-mapping.xml";
-        $this->mapping = simplexml_load_file($this->mappingFilePath);
+    private function __construct(DataSource $dataSource = NULL) {
+        if (!is_null($dataSource))
+            $this->conn = $dataSource;
+//        $this->mappingFilePath = dirname(__FILE__) . "/../../../orm-mapping.xml";
+//        $this->mapping = simplexml_load_file($this->mappingFilePath);
+    }
+
+    private function load() {
+        if (is_null($this->mapping)) {
+            if (!is_null($this->mappingFilePath)) {
+                $this->mapping = simplexml_load_file($this->mappingFilePath);
+            }
+        }
     }
 
     public static function getInstance() {
@@ -36,24 +49,30 @@ class EntityManager {
      * @param type $entity 
      */
     public function save($entity) {
+        $this->load();
+        $mapper = MapperBuilder::buildFromClassName($this->mapping, get_class($entity));
         $id = "";
         if (is_null($entity->getId())) {
-            // insert entity
-            $queryIns = $this->buildInsertQuery($entity);
-            $id = $this->conn->insertSQL($queryIns);
+
+            /* insert entity */
+            $queryIns = QueryBuilder::buildInsertQuery($entity, $mapper, $this->getDataSource());
+
+            $id = $this->getDataSource()->executeInsert($queryIns);
             $entity->setId($id);
 
-            // relations
-            $queryRel = $this->buildRelationQuery($entity);
-            foreach (explode(";", $queryRel) as $q) {
-                if (strlen($q) > 5)
-                    $this->conn->executeInsert($q);
+            /* relations */
+            foreach ($mapper->getRelations() as $relation) {
+                $queryRel = QueryBuilder::buildRelationQuery($entity, $relation);
+                foreach (explode(";", $queryRel) as $q) {
+                    if (strlen($q) > 5)
+                        $this->getDataSource()->executeInsert($q);
+                }
             }
         } else {
-            $queryUpt = $this->buildUpdateQuery($entity);
-            $this->conn->executeNonQuery($queryUpt);
+            $queryUpt = QueryBuilder::buildUpdateQuery($entity, $mapper);
+            $this->getDataSource()->executeNonQuery($queryUpt);
             $id = $entity->getId();
-            $this->updateRelations($entity);
+            $this->updateRelations($entity, $mapper);
         }
         return $id;
     }
@@ -65,19 +84,21 @@ class EntityManager {
      * 
      * @param type $entity 
      */
-    public function updateRelations($entity) {
-        $mapper = MapperBuilder::buildFromMapping($this->mapping, get_class($entity));
+    public function updateRelations($entity, $mapper) {
         foreach ($mapper->getRelations() as $relation) {
             if ($relation->getCardinality() == Relation::$manyToMany) {
                 // delete previous relations
-                $queryDeletePrevious = $this->buildDeleteRelationQuery($relation, $entity);
-                $this->conn->executeNonQuery($queryDeletePrevious);
+                $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation, $entity);
+                foreach (explode(";", $queryDeletePrevious) as $q) {
+                    if (strlen($q) > 5)
+                        $this->getDataSource()->executeNonQuery($q);
+                }
 
                 // insert new relations
-                $queryRel = $this->buildRelationQuery($entity);
+                $queryRel = QueryBuilder::buildRelationQuery($entity, $relation);
                 foreach (explode(";", $queryRel) as $q) {
                     if (strlen($q) > 5)
-                        $this->conn->executeInsert($q);
+                        $this->getDataSource()->executeInsert($q);
                 }
             }
             if ($relation->getCardinality() == Relation::$oneToMany) {
@@ -98,143 +119,13 @@ class EntityManager {
     }
 
     /**
-     * Build a delete query for an entity.
-     * @param type $entity
-     * @return string 
-     */
-    public function buildDeleteQuery($entity) {
-        $mapper = MapperBuilder::buildFromMapping($this->mapping, get_class($entity));
-        $query = "";
-        foreach ($mapper->getRelations() as $relation) {
-            $query .= $this->buildDeleteRelationQuery($relation, $entity);
-        }
-
-        $query .= "DELETE FROM " . $mapper->getTable() . " ";
-        $query .= "WHERE id = '" . $entity->getId() . "';";
-
-        return $query;
-    }
-
-    /**
-     * Build a delete query for an entity an its relation.
-     * @param type $relation
-     * @param type $entity
-     * @return string 
-     */
-    public function buildDeleteRelationQuery($relation, $entity) {
-        $query = "DELETE FROM " . $relation->getTable() . " ";
-        $query .= "WHERE " . $relation->getForeignColumn() . " = '" . $entity->getId() . "';";
-        return $query;
-    }
-
-    /**
-     * Return the entity insert query.
-     * @param type $entity
-     * @return string 
-     */
-    public function buildInsertQuery($entity) {
-
-        $mapper = MapperBuilder::buildFromMapping($this->mapping, get_class($entity));
-        $fields = "";
-        $values = "";
-        foreach ($mapper->getPropertys() as $property) {
-            if ($property->getColumn() != "id") {
-                $method = "get" . $property->getName();
-                $entity->$method();
-                $fields .= "`" . $property->getColumn() . "`, ";
-                $values .= "'" . $entity->$method() . "', ";
-            }
-        }
-
-        $fields = substr_replace($fields, "", -2);
-        $values = substr_replace($values, "", -2);
-
-        $query = "INSERT INTO `" . $mapper->getTable() . "` (" . $fields . ") VALUES (" . $values . ");";
-
-        return $query;
-    }
-
-    public function buildRelationQuery($entity) {
-        $mapper = MapperBuilder::buildFromMapping($this->mapping, get_class($entity));
-        $relQuery = "";
-        $getid = "getId";
-        foreach ($mapper->getRelations() as $relation) {
-            if ($relation->getCardinality() == Relation::$manyToMany) {
-                $m = "get" . $relation->getName();
-                foreach ($entity->$m() as $rel) {
-                    $relQuery .= "INSERT INTO " . $relation->getTable() . " (" . $relation->getLocalColumn() . ", " . $relation->getForeignColumn() . ") ";
-                    $relQuery .= "VALUES ('" . $entity->$getid() . "', '" . $rel->$getid() . "');";
-                }
-            }
-            if ($relation->getCardinality() == Relation::$oneToMany) {
-                $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
-                $m = "get" . $relation->getName();
-                foreach ($entity->$m() as $rel) {
-                    $setid = "set" . $relMapper->getNameForColumn($relation->getForeignColumn());
-                    $rel->$setid($entity->$getid());
-                    $relQuery .= $this->buildInsertQuery($rel);
-                }
-            }
-        }
-
-        return $relQuery;
-    }
-
-    /**
-     * Return the entity insert query.
-     * @param type $entity
-     * @return string 
-     */
-    public function buildUpdateQuery($entity) {
-        $mapper = MapperBuilder::buildFromMapping($this->mapping, get_class($entity));
-
-        $fields = "";
-        foreach ($mapper->getPropertys() as $property) {
-            if ($property->getColumn() != "id") {
-                $method = "get" . $property->getName();
-                $entity->$method();
-                $fields .= "`" . $property->getColumn() . "`='" . $entity->$method() . "', ";
-            }
-        }
-        $fields = substr_replace($fields, "", -2);
-        $query = "UPDATE `" . $mapper->getTable() . "` SET " . $fields . " WHERE id='" . $entity->getId() . "'";
-
-        return $query;
-    }
-
-    /**
-     * Get the query for select the related entitys.
-     * @param type $entity
-     * @param type $relation Name of the relation.
-     */
-    public function buildSelectRelation($entity, $mapper, $relation, $mapperRelation) {
-        $query = "";
-
-        $fields = "";
-        foreach ($mapperRelation->getPropertys() as $property) {
-            $fields .= "c." . $property->getColumn() . ", ";
-        }
-        $fields = substr_replace($fields, "", -2);
-
-        if ($relation->getCardinality() == Relation::$manyToMany) {
-            $query = "select " . $fields . " from " . $mapperRelation->getTable() . " c ";
-            $query .= "inner join " . $relation->getTable() . " nc on nc." . $relation->getForeignColumn() . " = c.id ";
-            $query .= "where nc." . $relation->getLocalColumn() . " = " . $entity->getId();
-        }
-        if ($relation->getCardinality() == Relation::$oneToMany) {
-            $query = "select " . $fields . " from " . $mapperRelation->getTable() . " c ";
-            $query .= "where c." . $relation->getForeignColumn() . " = " . $entity->getId();
-        }
-        return $query;
-    }
-
-    /**
      * Return an array of all entitys.
      * @param object $entity
      * @return array array of entitys.
      */
-    public function findAll($entity, $ordenColumn = null, $ordenType = null) {
-        $mapper = MapperBuilder::buildFromMapping($this->mapping, get_class($entity));
+    public function findAll($name, $ordenColumn = null, $ordenType = null) {
+        $this->load();
+        $mapper = MapperBuilder::buildFromName($this->mapping, $name);
 
         $query = "SELECT * FROM `" . $mapper->getTable() . "` ";
         if (!is_null($ordenColumn)) {
@@ -245,19 +136,13 @@ class EntityManager {
                 $query .= "ASC";
             }
         }
-        $result = $this->conn->executeQuery($query);
-
-        $array = array();
-        if ($result) {
-            $class = $mapper->getClass();
-            foreach ($result as $row) {
-                $newEntity = new $class();
-                $this->populateEntity($newEntity, $row, $mapper);
-                $array[] = $newEntity;
-            }
+        $raw = $this->getDataSource()->executeQuery($query);
+        if ($raw) {
+            $collection = new Collection($mapper->getClass(), $raw, $mapper);
+        } else {
+            $collection = new Collection($mapper->getClass(), array(), $mapper);
         }
-
-        return $array;
+        return $collection;
     }
 
     /**
@@ -266,36 +151,33 @@ class EntityManager {
      * @param type $id
      * @return \flowcode\orm\support\class 
      */
-    public function findById($class, $id) {
-        $mapper = MapperBuilder::buildFromMapping($this->mapping, $class);
+    public function findById($name, $id) {
+        $this->load();
+        $mapper = MapperBuilder::buildFromName($this->mapping, $name);
 
         $newEntity = NULL;
 
         $query = "SELECT * FROM `" . $mapper->getTable() . "` WHERE id='$id'";
-        $result = $this->conn->executeQuery($query);
+        $result = $this->getDataSource()->executeQuery($query);
 
         if ($result) {
             $class = $mapper->getClass();
-            $newEntity = new $class();
-            $this->populateEntity($newEntity, $result[0], $mapper);
+            $newEntity = $mapper->createObject($result[0]);
 
-            // populate relations
+            /* relations */
             foreach ($mapper->getRelations() as $relation) {
 
                 $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
-                $queryRel = $this->buildSelectRelation($newEntity, $mapper, $relation, $relMapper);
-                $resRel = $this->conn->executeQuery($queryRel);
+                $queryRel = QueryBuilder::buildSelectRelation($newEntity, $relation, $relMapper);
+                $resRel = $this->getDataSource()->executeQuery($queryRel);
 
-                $classRel = $relMapper->getClass();
                 $method = "set" . $relation->getName();
                 if ($resRel) {
-                    foreach ($resRel as $row) {
-                        $newEntityRel = new $classRel();
-                        $this->populateEntity($newEntityRel, $row, $relMapper, $relation->getForeignColumn());
-                        $array[] = $newEntityRel;
-                    }
-                    $newEntity->$method($array);
+                    $collection = new Collection($relMapper->getClass(), $resRel, $relMapper);
+                } else {
+                    $collection = new Collection($relMapper->getClass(), array(), $relMapper);
                 }
+                $newEntity->$method($collection);
             }
         }
         return $newEntity;
@@ -307,20 +189,160 @@ class EntityManager {
      * @return boolean 
      */
     public function delete($entity) {
-        $deleteQuerys = $this->buildDeleteQuery($entity);
+        $this->load();
+        $mapper = MapperBuilder::buildFromClassName($this->mapping, get_class($entity));
+        $deleteQuerys = QueryBuilder::buildDeleteQuery($entity, $mapper);
+
         foreach (explode(";", $deleteQuerys) as $q) {
             if (strlen($q) > 5)
-                $this->conn->executeNonQuery($q);
+                $this->getDataSource()->executeNonQuery($q);
         }
         return true;
     }
 
+    /**
+     * 
+     * @param \flowcode\orm\Entity $entity
+     * @param type $relationName
+     * @return \flowcode\orm\class
+     */
+    public function findRelation($entity, $relationName) {
+        $this->load();
+        $mapper = MapperBuilder::buildFromClassName($this->mapping, get_class($entity));
+        $relation = $mapper->getRelation($relationName);
+        $relationMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
+
+        $selectQuery = "SELECT tmain.* FROM `" . $relationMapper->getTable() . "` tmain ";
+        $joinQuery = QueryBuilder::buildJoinRelationQuery($relation, "tmain", "j1");
+        $whereQuery = "WHERE j1." . $relation->getLocalColumn() . " = '" . $entity->getId() . "'";
+
+        $query = $selectQuery . $joinQuery . $whereQuery;
+        $queryResult = $this->getDataSource()->executeQuery($query);
+        if ($queryResult) {
+            $collection = new Collection($relationMapper->getClass(), $queryResult, $relationMapper);
+        } else {
+            $collection = new Collection($relationMapper->getClass(), array(), $relationMapper);
+        }
+
+        return $collection;
+    }
+
+    /**
+     * Finds entitys wich apply the filter.
+     * Example: "name = 'some name'".
+     * @param type $name
+     * @param type $filter
+     * @param type $orderColumn
+     * @param type $orderType
+     * @return \flowcode\orm\class
+     */
+    public function findByWhereFilter($name, $filter, $orderColumn = null, $orderType = NULL) {
+        $this->load();
+        $mapper = MapperBuilder::buildFromName($this->mapping, $name);
+
+        $query = "SELECT * FROM `" . $mapper->getTable() . "` ";
+        $query .= "WHERE 1 ";
+        if (!is_null($filter)) {
+            $query .= "AND " . $filter;
+        }
+
+        if (!is_null($orderColumn)) {
+            $query .= "ORDER BY `$orderColumn` ";
+            if (!is_null($orderType)) {
+                $query .= "$orderType";
+            } else {
+                $query .= "ASC ";
+            }
+        }
+        $result = $this->getDataSource()->executeQuery($query);
+
+        if ($result) {
+            $collection = new Collection($mapper->getClass(), $result, $mapper);
+        } else {
+            $collection = new Collection($mapper->getClass(), array(), $mapper);
+        }
+
+        return $collection;
+    }
+
+    /**
+     * Finds entitys by its generic filter defined in the configured mapping.
+     * @param type $name
+     * @param type $filter
+     * @param type $page
+     * @param type $orderColumn
+     * @param type $orderType
+     * @return Pager
+     */
+    public function findByGenericFilter($name, $filter = null, $page = 1, $orderColumn = null, $orderType = null) {
+        $this->load();
+        $mapper = MapperBuilder::buildFromName($this->mapping, $name);
+
+        $selectQuery = "";
+        $whereQuery = "";
+        $orderQuery = "";
+
+        $selectQuery .= "SELECT * FROM `" . $mapper->getTable() . "` ";
+        $filterList = array();
+        if (!is_null($filter)) {
+            $filterList = explode(" ", $filter);
+        }
+
+        if (!is_null($filter)) {
+            $whereQuery .= " WHERE 1=2 ";
+            foreach ($filterList as $searchedWord) {
+                foreach ($mapper->getFilter("generic")->getColumns() as $filteredColumn) {
+                    $whereQuery .= " OR $filteredColumn LIKE '%" . $searchedWord . "%'";
+                }
+            }
+        } else {
+            $whereQuery .= " WHERE 1 ";
+        }
+
+        if (!is_null($orderColumn)) {
+            $orderQuery .= "ORDER BY $orderColumn ";
+            if (!is_null($orderType)) {
+                $orderQuery .= "$orderType";
+            } else {
+                $orderQuery .= "ASC";
+            }
+        }
+
+        $from = ($page - 1) * $mapper->getFilter("generic")->getItemsPerPage();
+        $pageQuery = " LIMIT $from , " . $mapper->getFilter("generic")->getItemsPerPage();
+
+        $query = $selectQuery . $whereQuery . $orderQuery . $pageQuery;
+        $result = $this->getDataSource()->executeQuery($query);
+
+        if ($result) {
+            $collection = new Collection($mapper->getClass(), $result, $mapper);
+        } else {
+            $collection = new Collection($mapper->getClass(), array(), $mapper);
+        }
+
+        $selectCountQuery = "SELECT count(*) as total FROM `" . $mapper->getTable() . "` ";
+        $query = $selectCountQuery . $whereQuery;
+        $result = $this->getDataSource()->executeQuery($query);
+        $itemCount = $result[0]["total"];
+        $pager = new Pager($collection, $itemCount, $mapper->getFilter("generic")->getItemsPerPage(), $page);
+
+        return $pager;
+    }
+
+    /**
+     * Get the current DataSource instance.
+     * @return DataSource
+     */
     public function getDataSource() {
         return $this->conn;
     }
 
-    public function setDataSource($conn) {
-        $this->conn = $conn;
+    /**
+     * Function to set a DataSource instance.
+     * @param DataSource $dataSource
+     */
+    public function setDataSource(DataSource $dataSource) {
+        $this->conn = $dataSource;
     }
 
     public function getMappingFilePath() {
@@ -337,18 +359,6 @@ class EntityManager {
 
     public function setMapping($mapping) {
         $this->mapping = $mapping;
-    }
-
-    public function populateEntity($entity, $values, $mapper = null, $relationColumn = null) {
-        if (is_null($mapper)) {
-            $mapper = MapperBuilder::buildFromMapping($this->mapping, get_class($entity));
-        }
-        foreach ($values as $key => $value) {
-            if ($mapper->getNameForColumn($key) != NULL) {
-                $method = "set" . $mapper->getNameForColumn($key);
-                $entity->$method($value);
-            }
-        }
     }
 
 }

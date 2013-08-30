@@ -42,7 +42,7 @@ class MapperBuilderTest extends \PHPUnit_Framework_TestCase {
         $instance = new Ovni();
         $mapping = simplexml_load_file($this->mappingFilePath);
 
-        $mapper = $this->object->buildFromMapping($mapping, get_class($instance));
+        $mapper = $this->object->buildFromClassName($mapping, get_class($instance));
 
         $this->assertEquals(get_class($instance), $mapper->getClass());
         $this->assertEquals("ovni", $mapper->getTable());
@@ -54,7 +54,7 @@ class MapperBuilderTest extends \PHPUnit_Framework_TestCase {
         $mappingFilePath = dirname(__FILE__) . "/../orm-mapping-test.xml";
         $mapping = simplexml_load_file($mappingFilePath);
 
-        $mapper = $this->object->buildFromMapping($mapping, get_class($ovni));
+        $mapper = $this->object->buildFromClassName($mapping, get_class($ovni));
 
         $this->assertEquals(get_class($ovni), $mapper->getClass());
 

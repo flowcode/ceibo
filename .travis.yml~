@@ -1,0 +1,8 @@
+language: php
+php:
+  - "5.3"
+<<<<<<< HEAD
+script: "phpunit --configuration 'test/configuration.xml' --exclude-group need-db test"
+=======
+script: "phpunit --configuration 'test/configuration.xml'"
+>>>>>>> 161eea9846fe90d00009bb87746421a11a651aa1

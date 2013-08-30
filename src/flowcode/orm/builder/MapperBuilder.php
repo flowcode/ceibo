@@ -2,6 +2,7 @@
 
 namespace flowcode\orm\builder;
 
+use flowcode\orm\domain\Filter;
 use flowcode\orm\domain\Mapper;
 use flowcode\orm\domain\Property;
 use flowcode\orm\domain\Relation;
@@ -13,7 +14,7 @@ use flowcode\orm\domain\Relation;
  */
 class MapperBuilder {
 
-    public static function buildFromMapping($mapping, $classname) {
+    public static function buildFromClassName($mapping, $classname) {
 
         $instance = new Mapper();
         $instance->setClass($classname);
@@ -22,7 +23,7 @@ class MapperBuilder {
 
             $class = $mappedEntity->attributes()->class;
 
-            if ($instance->getClass() == $class) {
+            if ($classname == $class) {
 
                 $instance->setTable($mappedEntity->attributes()->table->__toString());
 
@@ -32,7 +33,7 @@ class MapperBuilder {
                 foreach ($props as $property) {
                     $name = $property->attributes()->name->__toString();
                     $column = $property->attributes()->column->__toString();
-                    $propertys[] = new Property($name, $column);
+                    $propertys[$name] = new Property($name, $column);
                 }
                 $instance->setPropertys($propertys);
 
@@ -48,9 +49,28 @@ class MapperBuilder {
                     $relInstance->setLocalColumn($relation->attributes()->localColumn->__toString());
                     $relInstance->setForeignColumn($relation->attributes()->foreignColumn->__toString());
 
-                    $relations[] = $relInstance;
+                    $relations[$relInstance->getName()] = $relInstance;
                 }
                 $instance->setRelations($relations);
+
+                // filters
+                $fils = $mappedEntity->filter;
+                $filters = array();
+                foreach ($fils as $filter) {
+                    $filInstance = new Filter();
+                    $filInstance->setName($filter->attributes()->name->__toString());
+                    $filInstance->setItemsPerPage($filter->attributes()->perPage->__toString());
+
+                    $filteredColumns = $filter->attributes()->columns->__toString();
+                    $columList = explode(",", $filteredColumns);
+
+                    foreach ($columList as $columnName) {
+                        $filInstance->addFilteredColumn($columnName);
+                    }
+
+                    $filters[$filInstance->getName()] = $filInstance;
+                }
+                $instance->setFilters($filters);
 
                 break;
             }
@@ -79,7 +99,7 @@ class MapperBuilder {
                 foreach ($props as $property) {
                     $name = $property->attributes()->name->__toString();
                     $column = $property->attributes()->column->__toString();
-                    $propertys[] = new Property($name, $column);
+                    $propertys[$name] = new Property($name, $column);
                 }
                 $instance->setPropertys($propertys);
 
@@ -95,9 +115,28 @@ class MapperBuilder {
                     $relInstance->setLocalColumn($relation->attributes()->localColumn->__toString());
                     $relInstance->setForeignColumn($relation->attributes()->foreignColumn->__toString());
 
-                    $relations[] = $relInstance;
+                    $relations[$relInstance->getName()] = $relInstance;
                 }
                 $instance->setRelations($relations);
+
+                // filters
+                $fils = $mappedEntity->filter;
+                $filters = array();
+                foreach ($fils as $filter) {
+                    $filInstance = new Filter();
+                    $filInstance->setName($filter->attributes()->name->__toString());
+                    $filInstance->setItemsPerPage($filter->attributes()->perPage->__toString());
+
+                    $filteredColumns = $filter->attributes()->columns->__toString();
+                    $columList = explode(",", $filteredColumns);
+
+                    foreach ($columList as $columnName) {
+                        $filInstance->addFilteredColumn($columnName);
+                    }
+
+                    $filters[$filInstance->getName()] = $filInstance;
+                }
+                $instance->setFilters($filters);
 
                 break;
             }
