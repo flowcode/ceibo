@@ -1,6 +1,7 @@
 {
     "name": "flowcode/ceibo",
     "description": "PHP Data Access Microframework",
+    "license": "MIT",
     "authors": [
         {
             "name": "Juan Manuel Agüero",
