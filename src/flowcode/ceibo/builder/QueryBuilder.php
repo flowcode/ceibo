@@ -68,6 +68,12 @@ class QueryBuilder {
         return $query;
     }
 
+    /**
+     * Return the insert relation query.
+     * @param type $entity
+     * @param \flowcode\ceibo\domain\Relation $relation
+     * @return string $query.
+     */
     public static function buildRelationQuery($entity, Relation $relation) {
         $relQuery = "";
         $getid = "getId";
@@ -93,9 +99,11 @@ class QueryBuilder {
     }
 
     /**
-     * Return the entity insert query.
+     * Return the update query for the entity.
      * @param type $entity
-     * @return string 
+     * @param \flowcode\ceibo\domain\Mapper $mapper
+     * @param \flowcode\ceibo\data\DataSource $dataSource
+     * @return string
      */
     public static function buildUpdateQuery($entity, Mapper $mapper, DataSource $dataSource) {
         $fields = "";

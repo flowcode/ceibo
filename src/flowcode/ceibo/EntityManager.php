@@ -67,7 +67,7 @@ class EntityManager {
                 }
             }
         } else {
-            $queryUpt = QueryBuilder::buildUpdateQuery($entity, $mapper);
+            $queryUpt = QueryBuilder::buildUpdateQuery($entity, $mapper, $this->getDataSource());
             $this->getDataSource()->executeNonQuery($queryUpt);
             $id = $entity->getId();
             $this->updateRelations($entity, $mapper);
