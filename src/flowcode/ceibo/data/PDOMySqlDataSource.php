@@ -69,7 +69,8 @@ class PDOMySqlDataSource implements DataSource {
     function executeInsert($query) {
 
         try {
-            $id = $this->getConnection()->execute($query)->lastInsertId();
+            $this->getConnection()->exec($query);
+            $id = $this->getConnection()->lastInsertId();
             return $id;
         } catch (Exception $ex) {
             throw new Exception("Fallo al ejecutar el insert.  " . $ex->getMessage());
