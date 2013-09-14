@@ -2,15 +2,29 @@
 <ceibo-mapping>
 
     <entity name="ovni" class="flowcode\ceibo\builder\Ovni" table="ovni" >
-        <property name="Id" column="id"/>
-        <property name="Name" column="name"/>
-        <relation entity="weapon" name="Weapons" table="ovni_weapon" localColumn="id_ovni" foreignColumn="id_weapon" cardinality="many-to-many" />
+        <property name="Id" type="bigint" />
+        <property name="Name" type="string" />
+        <relation entity="weapon" 
+                  name="Weapons" 
+                  table="ovni_weapon" 
+                  localColumn="id_ovni" 
+                  foreignColumn="id_weapon" 
+                  cardinality="many-to-many"
+                  onupdate="delete"
+                  ondelete="cascade" />
     </entity>
 
     <entity name="weapon" class="flowcode\ceibo\builder\Weapon" table="weapon" >
-        <property name="Id" column="id"/>
-        <property name="Name" column="name"/>
-        <relation entity="ovni" name="Ovnis" table="ovni_weapon" localColumn="id_weapon" foreignColumn="id_ovni" cardinality="many-to-many" />
+        <property name="Id" column="id" type="bigint"/>
+        <property name="Name" column="name" type="string"/>
+        <relation entity="ovni" 
+                  name="Ovnis" 
+                  table="ovni_weapon" 
+                  localColumn="id_weapon" 
+                  foreignColumn="id_ovni" 
+                  cardinality="many-to-many"
+                  onupdate="delete"
+                  ondelete="cascade" />
     </entity>
                 
 </ceibo-mapping>

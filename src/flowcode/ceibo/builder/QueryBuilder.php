@@ -56,7 +56,12 @@ class QueryBuilder {
                 $method = "get" . $property->getName();
                 $entity->$method();
                 $fields .= "`" . $property->getColumn() . "`, ";
-                $values .= "'" . $dataSource->escapeString($entity->$method()) . "', ";
+
+                if ($property->isNumeric()) {
+                    $values .= $dataSource->escapeString($entity->$method()) . ", ";
+                } else {
+                    $values .= "'" . $dataSource->escapeString($entity->$method()) . "', ";
+                }
             }
         }
 
@@ -111,7 +116,13 @@ class QueryBuilder {
             if ($property->getColumn() != "id") {
                 $method = "get" . $property->getName();
                 $entity->$method();
-                $fields .= "`" . $property->getColumn() . "`='" . $dataSource->escapeString($entity->$method()) . "', ";
+
+                if ($property->isNumeric()) {
+                    $fieldValue = "`=" . $dataSource->escapeString($entity->$method()) . ", ";
+                } else {
+                    $fieldValue = "`='" . $dataSource->escapeString($entity->$method()) . "', ";
+                }
+                $fields .= "`" . $property->getColumn() . $fieldValue;
             }
         }
         $fields = substr_replace($fields, "", -2);

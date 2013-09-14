@@ -97,7 +97,21 @@ class MapperBuilderTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals("ovni", $mapper->getTable());
     }
 
-    public function testBuildFceiboMapping_withRelations() {
+    /**
+     * @covers flowcode\ceibo\builder\MapperBuilder::buildFromMapping
+     */
+    public function testBuildFromMapping_noRelationsWithTypes_buildOk() {
+
+        $instance = new Ovni();
+        $mapping = simplexml_load_file($this->mappingFilePath);
+
+        $mapper = $this->object->buildFromClassName($mapping, get_class($instance));
+
+        $this->assertEquals(get_class($instance), $mapper->getClass());
+        $this->assertEquals("ovni", $mapper->getTable());
+    }
+
+    public function testBuildFromMapping_withRelations() {
         $ovni = new Ovni();
 
         $mapping = simplexml_load_file($this->mappingFilePath);
@@ -119,6 +133,22 @@ class MapperBuilderTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals(get_class($instance), $mapper->getClass());
         $this->assertEquals("weapon", $mapper->getName());
         $this->assertNotNull($mapper->createObject($raw));
+    }
+
+    public function testBuildFromName_withTypes_testOk() {
+
+        $instance = new Weapon(1, "lazer");
+        $mapping = simplexml_load_file($this->mappingFilePath);
+
+        $mapper = $this->object->buildFromName($mapping, "weapon");
+        $raw = array("id" => 1, "name" => "lazer");
+        $this->assertEquals(get_class($instance), $mapper->getClass());
+        $this->assertEquals("weapon", $mapper->getName());
+
+        $property = $mapper->getProperty("Name");
+
+        $this->assertNotNull($mapper->createObject($raw));
+        $this->assertEquals("string", $property->getType());
     }
 
 }
