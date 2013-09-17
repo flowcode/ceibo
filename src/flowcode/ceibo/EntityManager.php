@@ -35,6 +35,10 @@ class EntityManager {
         }
     }
 
+    /**
+     * Get an EntityManager instance.
+     * @return EntityManager $em.
+     */
     public static function getInstance() {
         if (empty(self::$instance)) {
             self::$instance = new EntityManager();
@@ -325,6 +329,15 @@ class EntityManager {
         $pager = new Pager($collection, $itemCount, $mapper->getFilter("generic")->getItemsPerPage(), $page);
 
         return $pager;
+    }
+
+    /**
+     * Execute raw query.
+     * @param string $query
+     * @return array
+     */
+    public function executeRawQuery($query) {
+        return $this->getDataSource()->executeQuery($query);
     }
 
     /**
