@@ -48,7 +48,7 @@ class QueryBuilder {
      * @param type $entity
      * @return string 
      */
-    public static function buildInsertQuery($entity, Mapper $mapper, DataSource $dataSource) {
+    public static function buildInsertQuery($entity, Mapper $mapper) {
         $fields = "";
         $values = "";
         foreach ($mapper->getPropertys() as $property) {
@@ -58,9 +58,9 @@ class QueryBuilder {
                 $fields .= "`" . $property->getColumn() . "`, ";
 
                 if ($property->isNumeric()) {
-                    $values .= $dataSource->escapeString($entity->$method()) . ", ";
+                    $values .= ":" . $property->getColumn() . ", ";
                 } else {
-                    $values .= "'" . $dataSource->escapeString($entity->$method()) . "', ";
+                    $values .= "':" . $property->getColumn() . "', ";
                 }
             }
         }
@@ -72,6 +72,8 @@ class QueryBuilder {
 
         return $query;
     }
+    
+    
 
     /**
      * Return the insert relation query.
@@ -84,10 +86,8 @@ class QueryBuilder {
         $getid = "getId";
         if ($relation->getCardinality() == Relation::$manyToMany) {
             $m = "get" . $relation->getName();
-            foreach ($entity->$m() as $rel) {
                 $relQuery .= "INSERT INTO " . $relation->getTable() . " (" . $relation->getLocalColumn() . ", " . $relation->getForeignColumn() . ") ";
-                $relQuery .= "VALUES ('" . $entity->$getid() . "', '" . $rel->$getid() . "');";
-            }
+                $relQuery .= "VALUES (':" . $relation->getLocalColumn() . "', ':" . $relation->getForeignColumn() . "');";
         }
         if ($relation->getCardinality() == Relation::$oneToMany) {
             $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
@@ -107,10 +107,9 @@ class QueryBuilder {
      * Return the update query for the entity.
      * @param type $entity
      * @param \flowcode\ceibo\domain\Mapper $mapper
-     * @param \flowcode\ceibo\data\DataSource $dataSource
      * @return string
      */
-    public static function buildUpdateQuery($entity, Mapper $mapper, DataSource $dataSource) {
+    public static function buildUpdateQuery($entity, Mapper $mapper) {
         $fields = "";
         foreach ($mapper->getPropertys() as $property) {
             if ($property->getColumn() != "id") {
@@ -118,15 +117,15 @@ class QueryBuilder {
                 $entity->$method();
 
                 if ($property->isNumeric()) {
-                    $fieldValue = "`=" . $dataSource->escapeString($entity->$method()) . ", ";
+                    $fieldValue = "`=:" . $property->getColumn() . ", ";
                 } else {
-                    $fieldValue = "`='" . $dataSource->escapeString($entity->$method()) . "', ";
+                    $fieldValue = "`=':" . $property->getColumn() . "', ";
                 }
                 $fields .= "`" . $property->getColumn() . $fieldValue;
             }
         }
         $fields = substr_replace($fields, "", -2);
-        $query = "UPDATE `" . $mapper->getTable() . "` SET " . $fields . " WHERE id='" . $entity->getId() . "'";
+        $query = "UPDATE `" . $mapper->getTable() . "` SET " . $fields . " WHERE id=':id'";
 
         return $query;
     }
@@ -166,6 +165,29 @@ class QueryBuilder {
 
         return $query;
     }
+    
+    public static function getInsertRelation($entity, $relation) {
+        $relQuery = "";
+        $getid = "getId";
+        if ($relation->getCardinality() == Relation::$manyToMany) {
+            $m = "get" . $relation->getName();
+            foreach ($entity->$m() as $rel) {
+                $relQuery .= "INSERT INTO " . $relation->getTable() . " (" . $relation->getLocalColumn() . ", " . $relation->getForeignColumn() . ") ";
+                $relQuery .= "VALUES ('" . $entity->$getid() . "', '" . $rel->$getid() . "');";
+            }
+        }
+        if ($relation->getCardinality() == Relation::$oneToMany) {
+            $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
+            $m = "get" . $relation->getName();
+            foreach ($entity->$m() as $rel) {
+                $setid = "set" . $relMapper->getNameForColumn($relation->getForeignColumn());
+                $rel->$setid($entity->$getid());
+                $relQuery .= $this->buildInsertQuery($rel);
+            }
+        }
+
+        return $relQuery;
+    }
 
     public function getDeleteQuery($entity, Mapper $mapper) {
         $query = self::buildDeleteQuery($entity, $mapper);
@@ -177,8 +199,8 @@ class QueryBuilder {
         return $query;
     }
 
-    public function getInsertQuery($entity, Mapper $mapper, DataSource $dataSource) {
-        $query = self::buildInsertQuery($entity, $mapper, $dataSource);
+    public function getInsertQuery($entity, Mapper $mapper) {
+        $query = self::buildInsertQuery($entity, $mapper);
         return $query;
     }
 
@@ -187,8 +209,8 @@ class QueryBuilder {
         return $query;
     }
 
-    public function getUpdateQuery($entity, Mapper $mapper, DataSource $dataSource) {
-        $query = self::buildUpdateQuery($entity, $mapper, $dataSource);
+    public function getUpdateQuery($entity, Mapper $mapper) {
+        $query = self::buildUpdateQuery($entity, $mapper);
         return $query;
     }
 

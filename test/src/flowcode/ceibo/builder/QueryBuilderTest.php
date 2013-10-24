@@ -109,9 +109,9 @@ class QueryBuilderTest extends \PHPUnit_Framework_TestCase {
         $ovni->addWeapon($weapon1);
         $ovni->addWeapon($weapon2);
 
-        $expected = "INSERT INTO `ovni` (`name`) VALUES ('martian');";
+        $expected = "INSERT INTO `ovni` (`name`) VALUES (':name');";
 
-        $buildedQuery = $this->object->getInsertQuery($ovni, $this->ovniMapper, $this->getDataSouceMock());
+        $buildedQuery = $this->object->getInsertQuery($ovni, $this->ovniMapper);
 
         $this->assertEquals($expected, $buildedQuery);
     }
@@ -139,8 +139,7 @@ class QueryBuilderTest extends \PHPUnit_Framework_TestCase {
         $rel->setName("Weapons");
         $rel->setTable("ovni_weapon");
 
-        $expected = "INSERT INTO ovni_weapon (id_ovni, id_weapon) VALUES ('1', '1');";
-        $expected .= "INSERT INTO ovni_weapon (id_ovni, id_weapon) VALUES ('1', '2');";
+        $expected = "INSERT INTO ovni_weapon (id_ovni, id_weapon) VALUES (':id_ovni', ':id_weapon');";
 
         $buildedQuery = $this->object->getRelationQuery($ovni, $rel);
         $this->assertEquals($expected, $buildedQuery);
@@ -152,8 +151,8 @@ class QueryBuilderTest extends \PHPUnit_Framework_TestCase {
      */
     public function testBuildUpdateQuery() {
         $weapon = new Weapon(2, "boomerang");
-        $expected = "UPDATE `weapon` SET `name`='boomerang' WHERE id='2'";
-        $buildedQuery = $this->object->getUpdateQuery($weapon, $this->weaponMapper, $this->getDataSouceMock());
+        $expected = "UPDATE `weapon` SET `name`=':name' WHERE id=':id'";
+        $buildedQuery = $this->object->getUpdateQuery($weapon, $this->weaponMapper);
 
         $this->assertEquals($expected, $buildedQuery);
     }
@@ -167,18 +166,6 @@ class QueryBuilderTest extends \PHPUnit_Framework_TestCase {
         $this->markTestIncomplete(
                 'This test has not been implemented yet.'
         );
-    }
-
-    /**
-     * 
-     * @return \flowcode\ceibo\data\DataSource $dataSource.
-     */
-    private function getDataSouceMock() {
-        $dataSource = $this->getMock('flowcode\ceibo\data\PDOMySqlDataSource', array('executeNonQuery', 'executeQuery', 'executeInsert', 'escapeString'));
-        $dataSource->expects($this->any())
-                ->method('escapeString')
-                ->will($this->returnArgument(0));
-        return $dataSource;
     }
 
 }

@@ -53,30 +53,107 @@ class EntityManager {
     public function save($entity) {
         $this->load();
         $mapper = MapperBuilder::buildFromClassName($this->mapping, get_class($entity));
-        $id = "";
         if (is_null($entity->getId())) {
+            $affectedRows = $this->insertEntity($entity, $mapper);
+        } else {
+//            $queryUpt = QueryBuilder::buildUpdateQuery($entity, $mapper, $this->getDataSource());
+//            $affectedRows = $this->getDataSource()->executeNonQuery($queryUpt);
+//            $this->updateRelations($entity, $mapper);
+            $affectedRows = $this->updateEntity($entity, $mapper);
+        }
+        return $affectedRows;
+    }
 
-            /* insert entity */
-            $queryIns = QueryBuilder::buildInsertQuery($entity, $mapper, $this->getDataSource());
+    public function insertEntity($entity, $mapper) {
+        $insertStmt = QueryBuilder::buildInsertQuery($entity, $mapper);
+        $values = array();
+        $affectedRows = 0;
+        foreach ($mapper->getPropertys() as $property) {
+            if ($property->getColumn() != "id") {
+                $method = "get" . $property->getName();
+                $values[":" . $property->getColumn()] = $entity->$method();
+            }
+        }
+        try {
+            /* begin transac */
+            $this->getDataSource()->beginTransaction();
 
-            $id = $this->getDataSource()->executeInsert($queryIns);
-            $entity->setId($id);
+            /* insert */
+            $affectedRows = $this->getDataSource()->insertSingleRow($insertStmt, $values);
 
             /* relations */
             foreach ($mapper->getRelations() as $relation) {
+                $this->getDataSource()->doInsertRelation($entity, $relation);
+
+                $insertRelStmt = QueryBuilder::buildRelationQuery($entity, $relation);
+                $values = array();
+                $m = "get" . $relation->getName();
+                $getid = "getId";
+                foreach ($entity->$m() as $rel) {
+                    $valueRow = array();
+                    $valueRow[":" . $relation->getLocalColumn()] = $entity->$getid();
+                    $valueRow[":" . $relation->getForeignColumn()] = $rel->$getid();
+                    $values[] = $valueRow;
+                }
+
+                $this->getDataSource()->insertMultipleRow($insertRelStmt, $values);
+            }
+
+            /* end transaction */
+            $this->getDataSource()->commit();
+        } catch (PDOException $e) {
+            $this->getDataSource()->rollback();
+        }
+        return $affectedRows;
+    }
+
+    public function updateEntity($entity, $mapper) {
+
+        $udateStatement = QueryBuilder::buildUpdateQuery($entity, $mapper);
+        $values = array();
+        $affectedRows = 0;
+        foreach ($mapper->getPropertys() as $property) {
+            if ($property->getColumn() != "id") {
+                $method = "get" . $property->getName();
+                $values[":" . $property->getColumn()] = $entity->$method();
+            }
+        }
+        /* update entity */
+        $this->getDataSource()->updateSingleRow($udateStatement, $values);
+
+        /* update relations */
+        foreach ($mapper->getRelations() as $relation) {
+            if ($relation->getCardinality() == Relation::$manyToMany) {
+                // delete previous relations
+                $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation, $entity);
+                foreach (explode(";", $queryDeletePrevious) as $q) {
+                    if (strlen($q) > 5)
+                        $this->getDataSource()->executeNonQuery($q);
+                }
+
+                // insert new relations
                 $queryRel = QueryBuilder::buildRelationQuery($entity, $relation);
                 foreach (explode(";", $queryRel) as $q) {
                     if (strlen($q) > 5)
                         $this->getDataSource()->executeInsert($q);
                 }
             }
-        } else {
-            $queryUpt = QueryBuilder::buildUpdateQuery($entity, $mapper, $this->getDataSource());
-            $this->getDataSource()->executeNonQuery($queryUpt);
-            $id = $entity->getId();
-            $this->updateRelations($entity, $mapper);
+            if ($relation->getCardinality() == Relation::$oneToMany) {
+                $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
+                $m = "get" . $relation->getName();
+                $setid = "set" . $relMapper->getNameForColumn($relation->getForeignColumn());
+
+                // save actual relations
+                foreach ($entity->$m() as $relEntity) {
+                    $relEntity->$setid($entity->getId());
+                    $this->save($relEntity);
+                }
+
+                //  delete old relations.
+                // TODO: delete old relations
+            }
         }
-        return $id;
+        return $affectedRows;
     }
 
     /**

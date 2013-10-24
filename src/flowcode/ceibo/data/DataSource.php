@@ -7,33 +7,44 @@ interface DataSource {
     function getConnection();
 
     /**
-     *  Execute Non Query:  
-     * 
-     *      Ejecuta una query sin esperar un valor de retorno.
+     * Insert a single row according to statement.
+     * @param string $statement
+     * @param array $values
      */
-    function executeNonQuery($query);
+    function insertSingleRow($statement, $values);
+    
+    /**
+     * Delete a single row according to statement.
+     * @param string $statement
+     * @param array $values
+     */
+    function deleteSingleRow($statement, $values);
 
     /**
-     * Execute Query:
-     * 
-     *      Ejecuta una query devolviendo la tabla como resultado.  En caso de
-     * no traer valores, retorna false.  En caso de error, muere infceiboando el 
-     * error.
+     * Update a single row according to statement.
+     * @param string $statement
+     * @param array $values
      */
-    function executeQuery($query);
+    function updateSingleRow($statement, $values);
 
     /**
-     *  Execute Insert:
-     * 
-     *      Ejecuta una query de tipo insert devolviendo el id del registro asociado en la tabla.  Si la tabla no posee
-     * campo id, la ejecución de la query se lleva a cabo pero el valor de retorno es indefinido.
+     * Insert multiple rows according to statement.
+     * @param type $statement
+     * @param type $values
      */
-    function executeInsert($query);
+    function insertMultipleRow($statement, $values);
 
     /**
-     * Get an escaped string according to the datasource.
+     * Query data source returning a collection.
+     * @param string $sql
      */
-    function escapeString($unescaped_string);
+    function query($sql);
+
+    function beginTransaction();
+
+    function commitTransaction();
+
+    function rollbackTransaction();
 }
 
 ?>
