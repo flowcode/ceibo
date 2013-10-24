@@ -37,9 +37,9 @@ class QueryBuilder {
      * @param type $entity
      * @return string 
      */
-    public static function buildDeleteRelationQuery(Relation $relation, $entity) {
+    public static function buildDeleteRelationQuery(Relation $relation) {
         $query = "DELETE FROM `" . $relation->getTable() . "` ";
-        $query .= "WHERE " . $relation->getLocalColumn() . " = '" . $entity->getId() . "';";
+        $query .= "WHERE " . $relation->getLocalColumn() . " = ':id';";
         return $query;
     }
 

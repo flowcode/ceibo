@@ -125,18 +125,23 @@ class EntityManager {
         foreach ($mapper->getRelations() as $relation) {
             if ($relation->getCardinality() == Relation::$manyToMany) {
                 // delete previous relations
-                $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation, $entity);
-                foreach (explode(";", $queryDeletePrevious) as $q) {
-                    if (strlen($q) > 5)
-                        $this->getDataSource()->executeNonQuery($q);
-                }
+                $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation);
+                $this->getDataSource()->deleteSingleRow($queryDeletePrevious, array(":id" => $entity->getId()));
 
                 // insert new relations
-                $queryRel = QueryBuilder::buildRelationQuery($entity, $relation);
-                foreach (explode(";", $queryRel) as $q) {
-                    if (strlen($q) > 5)
-                        $this->getDataSource()->executeInsert($q);
+                $insertRelStmt = QueryBuilder::buildRelationQuery($entity, $relation);
+                $values = array();
+                $m = "get" . $relation->getName();
+                $getid = "getId";
+                foreach ($entity->$m() as $rel) {
+                    $valueRow = array();
+                    $valueRow[":" . $relation->getLocalColumn()] = $entity->$getid();
+                    $valueRow[":" . $relation->getForeignColumn()] = $rel->$getid();
+                    $values[] = $valueRow;
                 }
+
+                $this->getDataSource()->insertMultipleRow($insertRelStmt, $values);
+                
             }
             if ($relation->getCardinality() == Relation::$oneToMany) {
                 $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());

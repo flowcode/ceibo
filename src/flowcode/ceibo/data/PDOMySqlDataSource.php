@@ -3,9 +3,7 @@
 namespace flowcode\ceibo\data;
 
 use Exception;
-use flowcode\ceibo\builder\MapperBuilder;
 use flowcode\ceibo\builder\QueryBuilder;
-use flowcode\ceibo\domain\Relation;
 use PDO;
 use PDOException;
 
@@ -79,7 +77,6 @@ class PDOMySqlDataSource implements DataSource {
     }
 
     function doInsert($entity, $mapper) {
-        $affectedRows = 0;
         $statement = QueryBuilder::buildInsertQuery($entity, $mapper);
         $stmt = $this->getConnection()->prepare($statement);
         foreach ($mapper->getPropertys() as $property) {
