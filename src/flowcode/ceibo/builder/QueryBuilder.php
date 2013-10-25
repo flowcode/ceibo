@@ -107,7 +107,7 @@ class QueryBuilder {
                 if ($property->isNumeric()) {
                     $fieldValue = "`=:" . $property->getColumn() . ", ";
                 } else {
-                    $fieldValue = "`=':" . $property->getColumn() . "', ";
+                    $fieldValue = "`=:" . $property->getColumn() . ", ";
                 }
                 $fields .= "`" . $property->getColumn() . $fieldValue;
             }
