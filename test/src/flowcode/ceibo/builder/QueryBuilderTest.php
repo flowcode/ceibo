@@ -63,22 +63,19 @@ class QueryBuilderTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @covers QueryBuilder::buildDeleteQuery
-     * @todo   Implement testBuildDeleteQuery().
      */
     public function testBuildDeleteQuery() {
         $ovni = new Ovni();
         $ovni->setId("10");
 
-        $expected = "DELETE FROM `ovni_weapon` WHERE id_ovni = '10';";
-        $expected .= "DELETE FROM ovni WHERE id = '10';";
+        $expected = "DELETE FROM ovni WHERE id = :id;";
 
-        $deleteQuery = $this->object->getDeleteQuery($ovni, $this->ovniMapper);
+        $deleteQuery = $this->object->getDeleteQuery($this->ovniMapper);
         $this->assertEquals($expected, $deleteQuery);
     }
 
     /**
      * @covers QueryBuilder::buildDeleteRelationQuery
-     * @todo   Implement testBuildDeleteRelationQuery().
      */
     public function testBuildDeleteRelationQuery() {
         $rel = new Relation();
@@ -92,7 +89,7 @@ class QueryBuilderTest extends \PHPUnit_Framework_TestCase {
         $ovni = new Ovni();
         $ovni->setId("10");
 
-        $expected = "DELETE FROM `ovni_weapon` WHERE id_weapon = '10';";
+        $expected = "DELETE FROM `ovni_weapon` WHERE id_weapon = :id;";
         $deleteRelationQuery = $this->object->getDeleteRelationQuery($rel, $ovni);
         $this->assertEquals($expected, $deleteRelationQuery);
     }
@@ -109,7 +106,7 @@ class QueryBuilderTest extends \PHPUnit_Framework_TestCase {
         $ovni->addWeapon($weapon1);
         $ovni->addWeapon($weapon2);
 
-        $expected = "INSERT INTO `ovni` (`name`) VALUES (':name');";
+        $expected = "INSERT INTO `ovni` (`name`) VALUES (:name)";
 
         $buildedQuery = $this->object->getInsertQuery($ovni, $this->ovniMapper);
 

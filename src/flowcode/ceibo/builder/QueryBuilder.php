@@ -18,27 +18,20 @@ class QueryBuilder {
      * @param type $entity
      * @return string 
      */
-    public static function buildDeleteQuery($entity, Mapper $mapper) {
-        $query = "";
-        foreach ($mapper->getRelations() as $relation) {
-            $query .= self::buildDeleteRelationQuery($relation, $entity);
-        }
-
-        $query .= "DELETE FROM " . $mapper->getTable() . " ";
-        $query .= "WHERE id = '" . $entity->getId() . "';";
-
+    public static function buildDeleteQuery(Mapper $mapper) {
+        $query = "DELETE FROM " . $mapper->getTable() . " ";
+        $query .= "WHERE id = :id;";
         return $query;
     }
 
     /**
-     * Build a delete query for an entity an its relation.
+     * Build a delete query for a relation.
      * @param type $relation
-     * @param type $entity
      * @return string 
      */
     public static function buildDeleteRelationQuery(Relation $relation) {
         $query = "DELETE FROM `" . $relation->getTable() . "` ";
-        $query .= "WHERE " . $relation->getLocalColumn() . " = ':id';";
+        $query .= "WHERE " . $relation->getLocalColumn() . " = :id;";
         return $query;
     }
 
@@ -69,8 +62,6 @@ class QueryBuilder {
 
         return $query;
     }
-    
-    
 
     /**
      * Return the insert relation query.
@@ -83,8 +74,8 @@ class QueryBuilder {
         $getid = "getId";
         if ($relation->getCardinality() == Relation::$manyToMany) {
             $m = "get" . $relation->getName();
-                $relQuery .= "INSERT INTO " . $relation->getTable() . " (" . $relation->getLocalColumn() . ", " . $relation->getForeignColumn() . ") ";
-                $relQuery .= "VALUES (':" . $relation->getLocalColumn() . "', ':" . $relation->getForeignColumn() . "');";
+            $relQuery .= "INSERT INTO " . $relation->getTable() . " (" . $relation->getLocalColumn() . ", " . $relation->getForeignColumn() . ") ";
+            $relQuery .= "VALUES (':" . $relation->getLocalColumn() . "', ':" . $relation->getForeignColumn() . "');";
         }
         if ($relation->getCardinality() == Relation::$oneToMany) {
             $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
@@ -162,7 +153,7 @@ class QueryBuilder {
 
         return $query;
     }
-    
+
     public static function getInsertRelation($entity, $relation) {
         $relQuery = "";
         $getid = "getId";
@@ -186,13 +177,13 @@ class QueryBuilder {
         return $relQuery;
     }
 
-    public function getDeleteQuery($entity, Mapper $mapper) {
-        $query = self::buildDeleteQuery($entity, $mapper);
+    public function getDeleteQuery(Mapper $mapper) {
+        $query = self::buildDeleteQuery($mapper);
         return $query;
     }
 
-    public function getDeleteRelationQuery($relation, $entity) {
-        $query = self::buildDeleteRelationQuery($relation, $entity);
+    public function getDeleteRelationQuery($relation) {
+        $query = self::buildDeleteRelationQuery($relation);
         return $query;
     }
 

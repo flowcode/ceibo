@@ -275,12 +275,25 @@ class EntityManager {
     public function delete($entity) {
         $this->load();
         $mapper = MapperBuilder::buildFromClassName($this->mapping, get_class($entity));
-        $deleteQuerys = QueryBuilder::buildDeleteQuery($entity, $mapper);
-
-        foreach (explode(";", $deleteQuerys) as $q) {
-            if (strlen($q) > 5)
-                $this->getDataSource()->executeNonQuery($q);
+        $conn = $this->getDataSource();
+        try {
+            $conn->beginTransaction();
+            
+            /* delete relations */
+            foreach ($mapper->getRelations() as $relation) {
+                /* many to many */
+                if ($relation->getCardinality() == Relation::$manyToMany) {
+                    $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation);
+                    $conn->deleteSingleRow($queryDeletePrevious, array(":id" => $entity->getId()));
+                }
+            }
+            $deleteStmt = QueryBuilder::buildDeleteQuery($mapper);
+            $conn->deleteSingleRow($deleteStmt, array(":id" => $entity->getId()));
+            $conn->commitTransaction();
+        } catch (PDOException $e) {
+            $conn->rollbackTransaction();
         }
+
         return true;
     }
 
