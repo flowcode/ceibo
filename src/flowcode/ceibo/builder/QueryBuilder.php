@@ -123,7 +123,7 @@ class QueryBuilder {
      * @param type $entity
      * @param type $relation Name of the relation.
      */
-    public static function buildSelectRelation($entity, $relation, $mapperRelation) {
+    public static function buildSelectRelation($relation, $mapperRelation) {
         $query = "";
 
         $fields = "";
@@ -135,11 +135,11 @@ class QueryBuilder {
         if ($relation->getCardinality() == Relation::$manyToMany) {
             $query = "select " . $fields . " from " . $mapperRelation->getTable() . " c ";
             $query .= "inner join " . $relation->getTable() . " nc on nc." . $relation->getForeignColumn() . " = c.id ";
-            $query .= "where nc." . $relation->getLocalColumn() . " = " . $entity->getId();
+            $query .= "where nc." . $relation->getLocalColumn() . " = :id";
         }
         if ($relation->getCardinality() == Relation::$oneToMany) {
             $query = "select " . $fields . " from " . $mapperRelation->getTable() . " c ";
-            $query .= "where c." . $relation->getForeignColumn() . " = " . $entity->getId();
+            $query .= "where c." . $relation->getForeignColumn() . " = :id";
         }
         return $query;
     }

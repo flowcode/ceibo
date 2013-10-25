@@ -41,26 +41,28 @@ class PDOMySqlDataSource implements DataSource {
      * @return type
      * @throws Exception
      */
-    function query($sql) {
+    function query($statement, $bindValues = null) {
         try {
-            $stmt = $this->getConnection()->prepare($sql);
+            $stmt = $this->getConnection()->prepare($statement);
+            if (!is_null($bindValues)) {
+                foreach ($bindValues as $param => $value) {
+                    $stmt->bindValue($param, $value);
+                }
+            }
             $stmt->execute();
             return $stmt->fetchAll();
         } catch (Exception $pEx) {
-            throw new Exception("Fallo al ejecutar la query: " . $query . "  " . $pEx->getMessage());
+            throw new Exception("Fallo al ejecutar la query: " . $sql . "  " . $pEx->getMessage());
         }
     }
 
     function insertSingleRow($statement, $values) {
 
         $stmt = $this->getConnection()->prepare($statement);
-//        foreach ($values as $param => $value) {
-//            $stmt->bindValue($param, $value);
-//        }
-        $affectedRows = $stmt->execute($values);
-        print_r($values);
-        echo $values[':permalink'] . "<br>";
-        echo $statement;
+        foreach ($values as $param => $value) {
+            $stmt->bindValue($param, $value);
+        }
+        $affectedRows = $stmt->execute();
         return $affectedRows;
     }
 

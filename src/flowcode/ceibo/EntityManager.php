@@ -241,19 +241,21 @@ class EntityManager {
 
         $newEntity = NULL;
 
-        $query = "SELECT * FROM `" . $mapper->getTable() . "` WHERE id='$id'";
-        $result = $this->getDataSource()->executeQuery($query);
+        $query = "SELECT * FROM `" . $mapper->getTable() . "` WHERE id = :id";
+
+        $result = $this->getDataSource()->query($query, array(":id" => $id));
 
         if ($result) {
-            $class = $mapper->getClass();
             $newEntity = $mapper->createObject($result[0]);
 
             /* relations */
             foreach ($mapper->getRelations() as $relation) {
 
                 $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
-                $queryRel = QueryBuilder::buildSelectRelation($newEntity, $relation, $relMapper);
-                $resRel = $this->getDataSource()->executeQuery($queryRel);
+
+                $queryRel = QueryBuilder::buildSelectRelation($relation, $relMapper);
+
+                $resRel = $this->getDataSource()->query($queryRel, array(":id" => $newEntity->getId()));
 
                 $method = "set" . $relation->getName();
                 if ($resRel) {
@@ -278,7 +280,7 @@ class EntityManager {
         $conn = $this->getDataSource();
         try {
             $conn->beginTransaction();
-            
+
             /* delete relations */
             foreach ($mapper->getRelations() as $relation) {
                 /* many to many */
