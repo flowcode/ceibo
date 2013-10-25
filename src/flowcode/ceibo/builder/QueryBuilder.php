@@ -3,7 +3,6 @@
 namespace flowcode\ceibo\builder;
 
 use flowcode\ceibo\builder\MapperBuilder;
-use flowcode\ceibo\data\DataSource;
 use flowcode\ceibo\domain\Mapper;
 use flowcode\ceibo\domain\Relation;
 
@@ -53,14 +52,12 @@ class QueryBuilder {
         $values = "";
         foreach ($mapper->getPropertys() as $property) {
             if ($property->getColumn() != "id") {
-                $method = "get" . $property->getName();
-                $entity->$method();
                 $fields .= "`" . $property->getColumn() . "`, ";
 
                 if ($property->isNumeric()) {
                     $values .= ":" . $property->getColumn() . ", ";
                 } else {
-                    $values .= "':" . $property->getColumn() . "', ";
+                    $values .= ":" . $property->getColumn() . ", ";
                 }
             }
         }
@@ -68,7 +65,7 @@ class QueryBuilder {
         $fields = substr_replace($fields, "", -2);
         $values = substr_replace($values, "", -2);
 
-        $query = "INSERT INTO `" . $mapper->getTable() . "` (" . $fields . ") VALUES (" . $values . ");";
+        $query = "INSERT INTO `" . $mapper->getTable() . "` (" . $fields . ") VALUES (" . $values . ")";
 
         return $query;
     }
@@ -78,7 +75,7 @@ class QueryBuilder {
     /**
      * Return the insert relation query.
      * @param type $entity
-     * @param \flowcode\ceibo\domain\Relation $relation
+     * @param Relation $relation
      * @return string $query.
      */
     public static function buildRelationQuery($entity, Relation $relation) {
@@ -106,7 +103,7 @@ class QueryBuilder {
     /**
      * Return the update query for the entity.
      * @param type $entity
-     * @param \flowcode\ceibo\domain\Mapper $mapper
+     * @param Mapper $mapper
      * @return string
      */
     public static function buildUpdateQuery($entity, Mapper $mapper) {

@@ -56,12 +56,13 @@ class EntityManager {
         if (is_null($entity->getId())) {
             $affectedRows = $this->insertEntity($entity, $mapper);
         } else {
-//            $queryUpt = QueryBuilder::buildUpdateQuery($entity, $mapper, $this->getDataSource());
-//            $affectedRows = $this->getDataSource()->executeNonQuery($queryUpt);
-//            $this->updateRelations($entity, $mapper);
             $affectedRows = $this->updateEntity($entity, $mapper);
         }
-        return $affectedRows;
+        if (0 < $affectedRows) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public function insertEntity($entity, $mapper) {
@@ -86,23 +87,23 @@ class EntityManager {
                 $this->getDataSource()->doInsertRelation($entity, $relation);
 
                 $insertRelStmt = QueryBuilder::buildRelationQuery($entity, $relation);
-                $values = array();
+                $valuesUpt = array();
                 $m = "get" . $relation->getName();
                 $getid = "getId";
                 foreach ($entity->$m() as $rel) {
                     $valueRow = array();
                     $valueRow[":" . $relation->getLocalColumn()] = $entity->$getid();
                     $valueRow[":" . $relation->getForeignColumn()] = $rel->$getid();
-                    $values[] = $valueRow;
+                    $valuesUpt[] = $valueRow;
                 }
 
-                $this->getDataSource()->insertMultipleRow($insertRelStmt, $values);
+                $this->getDataSource()->insertMultipleRow($insertRelStmt, $valuesUpt);
             }
 
             /* end transaction */
-            $this->getDataSource()->commit();
+            $this->getDataSource()->commitTransaction();
         } catch (PDOException $e) {
-            $this->getDataSource()->rollback();
+            $this->getDataSource()->rollbackTransaction();
         }
         return $affectedRows;
     }
@@ -141,7 +142,6 @@ class EntityManager {
                 }
 
                 $this->getDataSource()->insertMultipleRow($insertRelStmt, $values);
-                
             }
             if ($relation->getCardinality() == Relation::$oneToMany) {
                 $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
@@ -220,7 +220,7 @@ class EntityManager {
                 $query .= "ASC";
             }
         }
-        $raw = $this->getDataSource()->executeQuery($query);
+        $raw = $this->getDataSource()->query($query);
         if ($raw) {
             $collection = new Collection($mapper->getClass(), $raw, $mapper);
         } else {
@@ -301,7 +301,7 @@ class EntityManager {
         $whereQuery = "WHERE j1." . $relation->getLocalColumn() . " = '" . $entity->getId() . "'";
 
         $query = $selectQuery . $joinQuery . $whereQuery;
-        $queryResult = $this->getDataSource()->executeQuery($query);
+        $queryResult = $this->getDataSource()->query($query);
         if ($queryResult) {
             $collection = new Collection($relationMapper->getClass(), $queryResult, $relationMapper);
         } else {
@@ -338,7 +338,7 @@ class EntityManager {
                 $query .= "ASC ";
             }
         }
-        $result = $this->getDataSource()->executeQuery($query);
+        $result = $this->getDataSource()->query($query);
 
         if ($result) {
             $collection = new Collection($mapper->getClass(), $result, $mapper);
@@ -396,7 +396,7 @@ class EntityManager {
         $pageQuery = " LIMIT $from , " . $mapper->getFilter("generic")->getItemsPerPage();
 
         $query = $selectQuery . $whereQuery . $orderQuery . $pageQuery;
-        $result = $this->getDataSource()->executeQuery($query);
+        $result = $this->getDataSource()->query($query);
 
         if ($result) {
             $collection = new Collection($mapper->getClass(), $result, $mapper);
@@ -406,7 +406,7 @@ class EntityManager {
 
         $selectCountQuery = "SELECT count(*) as total FROM `" . $mapper->getTable() . "` ";
         $query = $selectCountQuery . $whereQuery;
-        $result = $this->getDataSource()->executeQuery($query);
+        $result = $this->getDataSource()->query($query);
         $itemCount = $result[0]["total"];
         $pager = new Pager($collection, $itemCount, $mapper->getFilter("generic")->getItemsPerPage(), $page);
 
