@@ -119,45 +119,53 @@ class EntityManager {
                 $values[":" . $property->getColumn()] = $entity->$method();
             }
         }
-        /* update entity */
-        $this->getDataSource()->updateSingleRow($udateStatement, $values);
 
-        /* update relations */
-        foreach ($mapper->getRelations() as $relation) {
-            if ($relation->getCardinality() == Relation::$manyToMany) {
-                // delete previous relations
-                $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation);
-                $this->getDataSource()->deleteSingleRow($queryDeletePrevious, array(":id" => $entity->getId()));
+        $conn = $this->getDataSource();
+        try {
+            $conn->beginTransaction();
+            /* update entity */
+            $affectedRows = $conn->updateSingleRow($udateStatement, $values);
 
-                // insert new relations
-                $insertRelStmt = QueryBuilder::buildRelationQuery($entity, $relation);
-                $values = array();
-                $m = "get" . $relation->getName();
-                $getid = "getId";
-                foreach ($entity->$m() as $rel) {
-                    $valueRow = array();
-                    $valueRow[":" . $relation->getLocalColumn()] = $entity->$getid();
-                    $valueRow[":" . $relation->getForeignColumn()] = $rel->$getid();
-                    $values[] = $valueRow;
+            /* update relations */
+            foreach ($mapper->getRelations() as $relation) {
+                if ($relation->getCardinality() == Relation::$manyToMany) {
+                    // delete previous relations
+                    $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation);
+                    $conn->deleteSingleRow($queryDeletePrevious, array(":id" => $entity->getId()));
+
+                    // insert new relations
+                    $insertRelStmt = QueryBuilder::buildRelationQuery($entity, $relation);
+                    $values = array();
+                    $m = "get" . $relation->getName();
+                    $getid = "getId";
+                    foreach ($entity->$m() as $rel) {
+                        $valueRow = array();
+                        $valueRow[":" . $relation->getLocalColumn()] = $entity->$getid();
+                        $valueRow[":" . $relation->getForeignColumn()] = $rel->$getid();
+                        $values[] = $valueRow;
+                    }
+                    $conn->insertMultipleRow($insertRelStmt, $values);
                 }
+                if ($relation->getCardinality() == Relation::$oneToMany) {
+                    $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
+                    $m = "get" . $relation->getName();
+                    $setid = "set" . $relMapper->getNameForColumn($relation->getForeignColumn());
 
-                $this->getDataSource()->insertMultipleRow($insertRelStmt, $values);
-            }
-            if ($relation->getCardinality() == Relation::$oneToMany) {
-                $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
-                $m = "get" . $relation->getName();
-                $setid = "set" . $relMapper->getNameForColumn($relation->getForeignColumn());
+                    // save actual relations
+                    foreach ($entity->$m() as $relEntity) {
+                        $relEntity->$setid($entity->getId());
+                        $this->save($relEntity);
+                    }
 
-                // save actual relations
-                foreach ($entity->$m() as $relEntity) {
-                    $relEntity->$setid($entity->getId());
-                    $this->save($relEntity);
+                    //  delete old relations.
+                    // TODO: delete old relations
                 }
-
-                //  delete old relations.
-                // TODO: delete old relations
             }
+            $conn->commitTransaction();
+        } catch (PDOException $e) {
+            $conn->rollbackTransaction();
         }
+
         return $affectedRows;
     }
 

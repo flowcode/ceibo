@@ -75,7 +75,7 @@ class QueryBuilder {
         if ($relation->getCardinality() == Relation::$manyToMany) {
             $m = "get" . $relation->getName();
             $relQuery .= "INSERT INTO " . $relation->getTable() . " (" . $relation->getLocalColumn() . ", " . $relation->getForeignColumn() . ") ";
-            $relQuery .= "VALUES (':" . $relation->getLocalColumn() . "', ':" . $relation->getForeignColumn() . "');";
+            $relQuery .= "VALUES (:" . $relation->getLocalColumn() . ", :" . $relation->getForeignColumn() . ");";
         }
         if ($relation->getCardinality() == Relation::$oneToMany) {
             $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
