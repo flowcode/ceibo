@@ -3,7 +3,6 @@
 namespace flowcode\ceibo\builder;
 
 use flowcode\ceibo\builder\MapperBuilder;
-use flowcode\ceibo\data\DataSource;
 use flowcode\ceibo\domain\Mapper;
 use flowcode\ceibo\domain\Relation;
 
@@ -19,27 +18,20 @@ class QueryBuilder {
      * @param type $entity
      * @return string 
      */
-    public static function buildDeleteQuery($entity, Mapper $mapper) {
-        $query = "";
-        foreach ($mapper->getRelations() as $relation) {
-            $query .= self::buildDeleteRelationQuery($relation, $entity);
-        }
-
-        $query .= "DELETE FROM " . $mapper->getTable() . " ";
-        $query .= "WHERE id = '" . $entity->getId() . "';";
-
+    public static function buildDeleteQuery(Mapper $mapper) {
+        $query = "DELETE FROM " . $mapper->getTable() . " ";
+        $query .= "WHERE id = :id;";
         return $query;
     }
 
     /**
-     * Build a delete query for an entity an its relation.
+     * Build a delete query for a relation.
      * @param type $relation
-     * @param type $entity
      * @return string 
      */
     public static function buildDeleteRelationQuery(Relation $relation) {
         $query = "DELETE FROM `" . $relation->getTable() . "` ";
-        $query .= "WHERE " . $relation->getLocalColumn() . " = ':id';";
+        $query .= "WHERE " . $relation->getLocalColumn() . " = :id;";
         return $query;
     }
 
@@ -53,14 +45,12 @@ class QueryBuilder {
         $values = "";
         foreach ($mapper->getPropertys() as $property) {
             if ($property->getColumn() != "id") {
-                $method = "get" . $property->getName();
-                $entity->$method();
                 $fields .= "`" . $property->getColumn() . "`, ";
 
                 if ($property->isNumeric()) {
                     $values .= ":" . $property->getColumn() . ", ";
                 } else {
-                    $values .= "':" . $property->getColumn() . "', ";
+                    $values .= ":" . $property->getColumn() . ", ";
                 }
             }
         }
@@ -68,17 +58,15 @@ class QueryBuilder {
         $fields = substr_replace($fields, "", -2);
         $values = substr_replace($values, "", -2);
 
-        $query = "INSERT INTO `" . $mapper->getTable() . "` (" . $fields . ") VALUES (" . $values . ");";
+        $query = "INSERT INTO `" . $mapper->getTable() . "` (" . $fields . ") VALUES (" . $values . ")";
 
         return $query;
     }
-    
-    
 
     /**
      * Return the insert relation query.
      * @param type $entity
-     * @param \flowcode\ceibo\domain\Relation $relation
+     * @param Relation $relation
      * @return string $query.
      */
     public static function buildRelationQuery($entity, Relation $relation) {
@@ -86,8 +74,8 @@ class QueryBuilder {
         $getid = "getId";
         if ($relation->getCardinality() == Relation::$manyToMany) {
             $m = "get" . $relation->getName();
-                $relQuery .= "INSERT INTO " . $relation->getTable() . " (" . $relation->getLocalColumn() . ", " . $relation->getForeignColumn() . ") ";
-                $relQuery .= "VALUES (':" . $relation->getLocalColumn() . "', ':" . $relation->getForeignColumn() . "');";
+            $relQuery .= "INSERT INTO " . $relation->getTable() . " (" . $relation->getLocalColumn() . ", " . $relation->getForeignColumn() . ") ";
+            $relQuery .= "VALUES (:" . $relation->getLocalColumn() . ", :" . $relation->getForeignColumn() . ");";
         }
         if ($relation->getCardinality() == Relation::$oneToMany) {
             $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
@@ -106,7 +94,7 @@ class QueryBuilder {
     /**
      * Return the update query for the entity.
      * @param type $entity
-     * @param \flowcode\ceibo\domain\Mapper $mapper
+     * @param Mapper $mapper
      * @return string
      */
     public static function buildUpdateQuery($entity, Mapper $mapper) {
@@ -119,7 +107,7 @@ class QueryBuilder {
                 if ($property->isNumeric()) {
                     $fieldValue = "`=:" . $property->getColumn() . ", ";
                 } else {
-                    $fieldValue = "`=':" . $property->getColumn() . "', ";
+                    $fieldValue = "`=:" . $property->getColumn() . ", ";
                 }
                 $fields .= "`" . $property->getColumn() . $fieldValue;
             }
@@ -135,7 +123,7 @@ class QueryBuilder {
      * @param type $entity
      * @param type $relation Name of the relation.
      */
-    public static function buildSelectRelation($entity, $relation, $mapperRelation) {
+    public static function buildSelectRelation($relation, $mapperRelation) {
         $query = "";
 
         $fields = "";
@@ -147,11 +135,11 @@ class QueryBuilder {
         if ($relation->getCardinality() == Relation::$manyToMany) {
             $query = "select " . $fields . " from " . $mapperRelation->getTable() . " c ";
             $query .= "inner join " . $relation->getTable() . " nc on nc." . $relation->getForeignColumn() . " = c.id ";
-            $query .= "where nc." . $relation->getLocalColumn() . " = " . $entity->getId();
+            $query .= "where nc." . $relation->getLocalColumn() . " = :id";
         }
         if ($relation->getCardinality() == Relation::$oneToMany) {
             $query = "select " . $fields . " from " . $mapperRelation->getTable() . " c ";
-            $query .= "where c." . $relation->getForeignColumn() . " = " . $entity->getId();
+            $query .= "where c." . $relation->getForeignColumn() . " = :id";
         }
         return $query;
     }
@@ -165,7 +153,7 @@ class QueryBuilder {
 
         return $query;
     }
-    
+
     public static function getInsertRelation($entity, $relation) {
         $relQuery = "";
         $getid = "getId";
@@ -189,13 +177,13 @@ class QueryBuilder {
         return $relQuery;
     }
 
-    public function getDeleteQuery($entity, Mapper $mapper) {
-        $query = self::buildDeleteQuery($entity, $mapper);
+    public function getDeleteQuery(Mapper $mapper) {
+        $query = self::buildDeleteQuery($mapper);
         return $query;
     }
 
-    public function getDeleteRelationQuery($relation, $entity) {
-        $query = self::buildDeleteRelationQuery($relation, $entity);
+    public function getDeleteRelationQuery($relation) {
+        $query = self::buildDeleteRelationQuery($relation);
         return $query;
     }
 

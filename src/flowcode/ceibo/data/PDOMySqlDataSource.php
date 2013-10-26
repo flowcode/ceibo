@@ -41,20 +41,31 @@ class PDOMySqlDataSource implements DataSource {
      * @return type
      * @throws Exception
      */
-    function query($sql) {
+    function query($statement, $bindValues = null) {
         try {
-            return $this->getConnection()->query($sql);
+            $stmt = $this->getConnection()->prepare($statement);
+            if (!is_null($bindValues)) {
+                foreach ($bindValues as $param => $value) {
+                    $stmt->bindValue($param, $value);
+                }
+            }
+            $stmt->execute();
+            return $stmt->fetchAll();
         } catch (Exception $pEx) {
-            throw new Exception("Fallo al ejecutar la query: " . $query . "  " . $pEx->getMessage());
+            throw new Exception("Fallo al ejecutar la query: " . $sql . "  " . $pEx->getMessage());
         }
     }
 
     function insertSingleRow($statement, $values) {
+
         $stmt = $this->getConnection()->prepare($statement);
-        $affectedRows = $stmt->execute($values);
+        foreach ($values as $param => $value) {
+            $stmt->bindValue($param, $value);
+        }
+        $affectedRows = $stmt->execute();
         return $affectedRows;
     }
-    
+
     function deleteSingleRow($statement, $values) {
         $stmt = $this->getConnection()->prepare($statement);
         $affectedRows = $stmt->execute($values);
@@ -94,8 +105,8 @@ class PDOMySqlDataSource implements DataSource {
         $statement = QueryBuilder::getInsertRelation($entity, $relation);
         $stmt = $this->getConnection()->prepare($statement);
         $getid = "getId";
-
-        foreach ($entity->$m() as $rel) {
+        $method = "get" . $relation->getName();
+        foreach ($entity->$method() as $rel) {
             $values = array();
             $values[":" . $relation->getLocalColumn()] = $entity->$getid();
             $values[":" . $relation->getForeignColumn()] = $rel->$getid();

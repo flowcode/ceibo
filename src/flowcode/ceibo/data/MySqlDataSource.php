@@ -178,6 +178,38 @@ class MySqlDataSource implements DataSource {
         $this->db_pass = $db_pass;
     }
 
+    public function beginTransaction() {
+        
+    }
+
+    public function commitTransaction() {
+        
+    }
+
+    public function deleteSingleRow($statement, $values) {
+        
+    }
+
+    public function insertMultipleRow($statement, $values) {
+        
+    }
+
+    public function insertSingleRow($statement, $values) {
+        
+    }
+
+    public function query($sql) {
+        
+    }
+
+    public function rollbackTransaction() {
+        
+    }
+
+    public function updateSingleRow($statement, $values) {
+        
+    }
+
 }
 
 ?>

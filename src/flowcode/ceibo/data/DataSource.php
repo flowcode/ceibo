@@ -4,6 +4,9 @@ namespace flowcode\ceibo\data;
 
 interface DataSource {
 
+    /**
+     * Get a data dabe connection.
+     */
     function getConnection();
 
     /**
@@ -12,7 +15,7 @@ interface DataSource {
      * @param array $values
      */
     function insertSingleRow($statement, $values);
-    
+
     /**
      * Delete a single row according to statement.
      * @param string $statement
@@ -36,14 +39,24 @@ interface DataSource {
 
     /**
      * Query data source returning a collection.
-     * @param string $sql
+     * @param type $statement
+     * @param type $bindValues
      */
-    function query($sql);
+    function query($statement, $bindValues = null);
 
+    /**
+     * Begin a transaction.
+     */
     function beginTransaction();
 
+    /**
+     * Commit current transaction.
+     */
     function commitTransaction();
 
+    /**
+     * Rollback current transaction.
+     */
     function rollbackTransaction();
 }
 

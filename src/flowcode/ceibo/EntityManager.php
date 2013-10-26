@@ -56,12 +56,13 @@ class EntityManager {
         if (is_null($entity->getId())) {
             $affectedRows = $this->insertEntity($entity, $mapper);
         } else {
-//            $queryUpt = QueryBuilder::buildUpdateQuery($entity, $mapper, $this->getDataSource());
-//            $affectedRows = $this->getDataSource()->executeNonQuery($queryUpt);
-//            $this->updateRelations($entity, $mapper);
             $affectedRows = $this->updateEntity($entity, $mapper);
         }
-        return $affectedRows;
+        if (0 < $affectedRows) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public function insertEntity($entity, $mapper) {
@@ -86,23 +87,23 @@ class EntityManager {
                 $this->getDataSource()->doInsertRelation($entity, $relation);
 
                 $insertRelStmt = QueryBuilder::buildRelationQuery($entity, $relation);
-                $values = array();
+                $valuesUpt = array();
                 $m = "get" . $relation->getName();
                 $getid = "getId";
                 foreach ($entity->$m() as $rel) {
                     $valueRow = array();
                     $valueRow[":" . $relation->getLocalColumn()] = $entity->$getid();
                     $valueRow[":" . $relation->getForeignColumn()] = $rel->$getid();
-                    $values[] = $valueRow;
+                    $valuesUpt[] = $valueRow;
                 }
 
-                $this->getDataSource()->insertMultipleRow($insertRelStmt, $values);
+                $this->getDataSource()->insertMultipleRow($insertRelStmt, $valuesUpt);
             }
 
             /* end transaction */
-            $this->getDataSource()->commit();
+            $this->getDataSource()->commitTransaction();
         } catch (PDOException $e) {
-            $this->getDataSource()->rollback();
+            $this->getDataSource()->rollbackTransaction();
         }
         return $affectedRows;
     }
@@ -118,46 +119,53 @@ class EntityManager {
                 $values[":" . $property->getColumn()] = $entity->$method();
             }
         }
-        /* update entity */
-        $this->getDataSource()->updateSingleRow($udateStatement, $values);
 
-        /* update relations */
-        foreach ($mapper->getRelations() as $relation) {
-            if ($relation->getCardinality() == Relation::$manyToMany) {
-                // delete previous relations
-                $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation);
-                $this->getDataSource()->deleteSingleRow($queryDeletePrevious, array(":id" => $entity->getId()));
+        $conn = $this->getDataSource();
+        try {
+            $conn->beginTransaction();
+            /* update entity */
+            $affectedRows = $conn->updateSingleRow($udateStatement, $values);
 
-                // insert new relations
-                $insertRelStmt = QueryBuilder::buildRelationQuery($entity, $relation);
-                $values = array();
-                $m = "get" . $relation->getName();
-                $getid = "getId";
-                foreach ($entity->$m() as $rel) {
-                    $valueRow = array();
-                    $valueRow[":" . $relation->getLocalColumn()] = $entity->$getid();
-                    $valueRow[":" . $relation->getForeignColumn()] = $rel->$getid();
-                    $values[] = $valueRow;
+            /* update relations */
+            foreach ($mapper->getRelations() as $relation) {
+                if ($relation->getCardinality() == Relation::$manyToMany) {
+                    // delete previous relations
+                    $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation);
+                    $conn->deleteSingleRow($queryDeletePrevious, array(":id" => $entity->getId()));
+
+                    // insert new relations
+                    $insertRelStmt = QueryBuilder::buildRelationQuery($entity, $relation);
+                    $values = array();
+                    $m = "get" . $relation->getName();
+                    $getid = "getId";
+                    foreach ($entity->$m() as $rel) {
+                        $valueRow = array();
+                        $valueRow[":" . $relation->getLocalColumn()] = $entity->$getid();
+                        $valueRow[":" . $relation->getForeignColumn()] = $rel->$getid();
+                        $values[] = $valueRow;
+                    }
+                    $conn->insertMultipleRow($insertRelStmt, $values);
                 }
+                if ($relation->getCardinality() == Relation::$oneToMany) {
+                    $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
+                    $m = "get" . $relation->getName();
+                    $setid = "set" . $relMapper->getNameForColumn($relation->getForeignColumn());
 
-                $this->getDataSource()->insertMultipleRow($insertRelStmt, $values);
-                
-            }
-            if ($relation->getCardinality() == Relation::$oneToMany) {
-                $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
-                $m = "get" . $relation->getName();
-                $setid = "set" . $relMapper->getNameForColumn($relation->getForeignColumn());
+                    // save actual relations
+                    foreach ($entity->$m() as $relEntity) {
+                        $relEntity->$setid($entity->getId());
+                        $this->save($relEntity);
+                    }
 
-                // save actual relations
-                foreach ($entity->$m() as $relEntity) {
-                    $relEntity->$setid($entity->getId());
-                    $this->save($relEntity);
+                    //  delete old relations.
+                    // TODO: delete old relations
                 }
-
-                //  delete old relations.
-                // TODO: delete old relations
             }
+            $conn->commitTransaction();
+        } catch (PDOException $e) {
+            $conn->rollbackTransaction();
         }
+
         return $affectedRows;
     }
 
@@ -220,7 +228,7 @@ class EntityManager {
                 $query .= "ASC";
             }
         }
-        $raw = $this->getDataSource()->executeQuery($query);
+        $raw = $this->getDataSource()->query($query);
         if ($raw) {
             $collection = new Collection($mapper->getClass(), $raw, $mapper);
         } else {
@@ -241,19 +249,21 @@ class EntityManager {
 
         $newEntity = NULL;
 
-        $query = "SELECT * FROM `" . $mapper->getTable() . "` WHERE id='$id'";
-        $result = $this->getDataSource()->executeQuery($query);
+        $query = "SELECT * FROM `" . $mapper->getTable() . "` WHERE id = :id";
+
+        $result = $this->getDataSource()->query($query, array(":id" => $id));
 
         if ($result) {
-            $class = $mapper->getClass();
             $newEntity = $mapper->createObject($result[0]);
 
             /* relations */
             foreach ($mapper->getRelations() as $relation) {
 
                 $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
-                $queryRel = QueryBuilder::buildSelectRelation($newEntity, $relation, $relMapper);
-                $resRel = $this->getDataSource()->executeQuery($queryRel);
+
+                $queryRel = QueryBuilder::buildSelectRelation($relation, $relMapper);
+
+                $resRel = $this->getDataSource()->query($queryRel, array(":id" => $newEntity->getId()));
 
                 $method = "set" . $relation->getName();
                 if ($resRel) {
@@ -275,12 +285,25 @@ class EntityManager {
     public function delete($entity) {
         $this->load();
         $mapper = MapperBuilder::buildFromClassName($this->mapping, get_class($entity));
-        $deleteQuerys = QueryBuilder::buildDeleteQuery($entity, $mapper);
+        $conn = $this->getDataSource();
+        try {
+            $conn->beginTransaction();
 
-        foreach (explode(";", $deleteQuerys) as $q) {
-            if (strlen($q) > 5)
-                $this->getDataSource()->executeNonQuery($q);
+            /* delete relations */
+            foreach ($mapper->getRelations() as $relation) {
+                /* many to many */
+                if ($relation->getCardinality() == Relation::$manyToMany) {
+                    $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation);
+                    $conn->deleteSingleRow($queryDeletePrevious, array(":id" => $entity->getId()));
+                }
+            }
+            $deleteStmt = QueryBuilder::buildDeleteQuery($mapper);
+            $conn->deleteSingleRow($deleteStmt, array(":id" => $entity->getId()));
+            $conn->commitTransaction();
+        } catch (PDOException $e) {
+            $conn->rollbackTransaction();
         }
+
         return true;
     }
 
@@ -301,7 +324,7 @@ class EntityManager {
         $whereQuery = "WHERE j1." . $relation->getLocalColumn() . " = '" . $entity->getId() . "'";
 
         $query = $selectQuery . $joinQuery . $whereQuery;
-        $queryResult = $this->getDataSource()->executeQuery($query);
+        $queryResult = $this->getDataSource()->query($query);
         if ($queryResult) {
             $collection = new Collection($relationMapper->getClass(), $queryResult, $relationMapper);
         } else {
@@ -338,7 +361,7 @@ class EntityManager {
                 $query .= "ASC ";
             }
         }
-        $result = $this->getDataSource()->executeQuery($query);
+        $result = $this->getDataSource()->query($query);
 
         if ($result) {
             $collection = new Collection($mapper->getClass(), $result, $mapper);
@@ -396,7 +419,7 @@ class EntityManager {
         $pageQuery = " LIMIT $from , " . $mapper->getFilter("generic")->getItemsPerPage();
 
         $query = $selectQuery . $whereQuery . $orderQuery . $pageQuery;
-        $result = $this->getDataSource()->executeQuery($query);
+        $result = $this->getDataSource()->query($query);
 
         if ($result) {
             $collection = new Collection($mapper->getClass(), $result, $mapper);
@@ -406,7 +429,7 @@ class EntityManager {
 
         $selectCountQuery = "SELECT count(*) as total FROM `" . $mapper->getTable() . "` ";
         $query = $selectCountQuery . $whereQuery;
-        $result = $this->getDataSource()->executeQuery($query);
+        $result = $this->getDataSource()->query($query);
         $itemCount = $result[0]["total"];
         $pager = new Pager($collection, $itemCount, $mapper->getFilter("generic")->getItemsPerPage(), $page);
 
