@@ -114,10 +114,8 @@ class EntityManager {
         $values = array();
         $affectedRows = 0;
         foreach ($mapper->getPropertys() as $property) {
-            if ($property->getColumn() != "id") {
-                $method = "get" . $property->getName();
-                $values[":" . $property->getColumn()] = $entity->$method();
-            }
+            $method = "get" . $property->getName();
+            $values[":" . $property->getColumn()] = $entity->$method();
         }
 
         $conn = $this->getDataSource();

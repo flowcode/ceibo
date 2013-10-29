@@ -113,7 +113,7 @@ class QueryBuilder {
             }
         }
         $fields = substr_replace($fields, "", -2);
-        $query = "UPDATE `" . $mapper->getTable() . "` SET " . $fields . " WHERE id=':id'";
+        $query = "UPDATE `" . $mapper->getTable() . "` SET " . $fields . " WHERE id=:id";
 
         return $query;
     }
