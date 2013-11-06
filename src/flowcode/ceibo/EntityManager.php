@@ -80,11 +80,10 @@ class EntityManager {
             $this->getDataSource()->beginTransaction();
 
             /* insert */
-            $affectedRows = $this->getDataSource()->insertSingleRow($insertStmt, $values);
-
+            $id = $this->getDataSource()->insertSingleRow($insertStmt, $values);
+            $entity->setId($id);
             /* relations */
             foreach ($mapper->getRelations() as $relation) {
-                $this->getDataSource()->doInsertRelation($entity, $relation);
 
                 $insertRelStmt = QueryBuilder::buildRelationQuery($entity, $relation);
                 $valuesUpt = array();
