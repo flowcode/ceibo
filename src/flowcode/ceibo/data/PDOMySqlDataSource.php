@@ -62,8 +62,8 @@ class PDOMySqlDataSource implements DataSource {
         foreach ($values as $param => $value) {
             $stmt->bindValue($param, $value);
         }
-        $affectedRows = $stmt->execute();
-        return $affectedRows;
+        $stmt->execute();
+        return $this->getConnection()->lastInsertId();
     }
 
     function deleteSingleRow($statement, $values) {
