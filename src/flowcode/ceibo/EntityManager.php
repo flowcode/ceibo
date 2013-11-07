@@ -81,6 +81,9 @@ class EntityManager {
 
             /* insert */
             $id = $this->getDataSource()->insertSingleRow($insertStmt, $values);
+            if ($id != 0) {
+                $affectedRows += 1;
+            }
             $entity->setId($id);
             /* relations */
             foreach ($mapper->getRelations() as $relation) {
