@@ -308,12 +308,14 @@ class EntityManager {
     }
 
     /**
-     * 
-     * @param \flowcode\ceibo\Entity $entity
-     * @param type $relationName
-     * @return \flowcode\ceibo\class
+     * Find by table relation.
+     * @param type $entity
+     * @param string $relationName
+     * @param string $orderColumn
+     * @param string $orderType
+     * @return \flowcode\ceibo\domain\Collection
      */
-    public function findRelation($entity, $relationName) {
+    public function findRelation($entity, $relationName, $orderColumn = null, $orderType = null) {
         $this->load();
         $mapper = MapperBuilder::buildFromClassName($this->mapping, get_class($entity));
         $relation = $mapper->getRelation($relationName);
@@ -323,7 +325,17 @@ class EntityManager {
         $joinQuery = QueryBuilder::buildJoinRelationQuery($relation, "tmain", "j1");
         $whereQuery = "WHERE j1." . $relation->getLocalColumn() . " = '" . $entity->getId() . "'";
 
-        $query = $selectQuery . $joinQuery . $whereQuery;
+        $orderQuery = "";
+        if (!is_null($orderColumn)) {
+            $query .= "ORDER BY $orderColumn ";
+            if (!is_null($orderType)) {
+                $query .= "$orderType";
+            } else {
+                $query .= "ASC";
+            }
+        }
+
+        $query = $selectQuery . $joinQuery . $whereQuery . $orderQuery;
         $queryResult = $this->getDataSource()->query($query);
         if ($queryResult) {
             $collection = new Collection($relationMapper->getClass(), $queryResult, $relationMapper);
