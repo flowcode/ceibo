@@ -136,7 +136,7 @@ class QueryBuilderTest extends \PHPUnit_Framework_TestCase {
         $rel->setName("Weapons");
         $rel->setTable("ovni_weapon");
 
-        $expected = "INSERT INTO ovni_weapon (id_ovni, id_weapon) VALUES (':id_ovni', ':id_weapon');";
+        $expected = "INSERT INTO ovni_weapon (id_ovni, id_weapon) VALUES (:id_ovni, :id_weapon);";
 
         $buildedQuery = $this->object->getRelationQuery($ovni, $rel);
         $this->assertEquals($expected, $buildedQuery);
@@ -148,7 +148,7 @@ class QueryBuilderTest extends \PHPUnit_Framework_TestCase {
      */
     public function testBuildUpdateQuery() {
         $weapon = new Weapon(2, "boomerang");
-        $expected = "UPDATE `weapon` SET `name`=':name' WHERE id=':id'";
+        $expected = "UPDATE `weapon` SET `name`=:name WHERE id=:id";
         $buildedQuery = $this->object->getUpdateQuery($weapon, $this->weaponMapper);
 
         $this->assertEquals($expected, $buildedQuery);

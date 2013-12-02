@@ -123,6 +123,32 @@ class MapperBuilderTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals(1, count($mapper->getRelations()));
     }
 
+    public function testBuildFromMapping_withRelationLazyFalse_ok() {
+        $ovni = new Ovni();
+
+        $mapping = simplexml_load_file($this->mappingFilePath);
+
+        $mapper = $this->object->buildFromClassName($mapping, get_class($ovni));
+
+        $this->assertEquals(get_class($ovni), $mapper->getClass());
+
+        $relations = $mapper->getRelations();
+        $this->assertEquals(false, $relations["Weapons"]->isLazy());
+    }
+
+    public function testBuildFromMapping_withRelationsLazyTrue_ok() {
+        $ovni = new Weapon();
+
+        $mapping = simplexml_load_file($this->mappingFilePath);
+
+        $mapper = $this->object->buildFromClassName($mapping, get_class($ovni));
+
+        $this->assertEquals(get_class($ovni), $mapper->getClass());
+
+        $relations = $mapper->getRelations();
+        $this->assertEquals(true, $relations["Ovnis"]->isLazy());
+    }
+
     public function testBuildFromName() {
 
         $instance = new Weapon(1, "lazer");

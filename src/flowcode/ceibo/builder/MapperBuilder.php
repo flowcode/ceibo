@@ -85,6 +85,7 @@ class MapperBuilder {
             $relInstance->setEntity($relation->attributes()->entity->__toString());
             $relInstance->setName($relation->attributes()->name->__toString());
             $relInstance->setTable($relation->attributes()->table->__toString());
+            $relInstance->setLazy($relation->attributes()->lazy->__toString());
             $relInstance->setLocalColumn($relation->attributes()->localColumn->__toString());
             $relInstance->setForeignColumn($relation->attributes()->foreignColumn->__toString());
 
