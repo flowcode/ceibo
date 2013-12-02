@@ -330,11 +330,11 @@ class EntityManager {
 
         $orderQuery = "";
         if (!is_null($orderColumn)) {
-            $query .= "ORDER BY $orderColumn ";
+            $orderQuery .= "ORDER BY $orderColumn ";
             if (!is_null($orderType)) {
-                $query .= "$orderType";
+                $orderQuery .= "$orderType";
             } else {
-                $query .= "ASC";
+                $orderQuery .= "ASC";
             }
         }
 
