@@ -17,12 +17,26 @@ class Relation {
     private $localMethod;
     private $foreignColumn;
     private $foreignMethod;
-    
+    private $lazy;
     public static $oneToMany = "one-to-many";
     public static $manyToMany = "many-to-many";
 
     function __construct() {
-        
+        $this->lazy = true;
+    }
+
+    public function isLazy() {
+        return $this->lazy;
+    }
+
+    public function setLazy($lazy) {
+        if (is_bool($lazy)) {
+            $this->lazy = $lazy;
+        } else if ($lazy == "true" || $lazy == 1) {
+            $this->lazy = true;
+        } else if ($lazy == "false" || $lazy == 0) {
+            $this->lazy = false;
+        }
     }
 
     public function getCardinality() {
@@ -64,7 +78,7 @@ class Relation {
     public function setForeignMethod($foreignMethod) {
         $this->foreignMethod = $foreignMethod;
     }
-    
+
     public function getLocalColumn() {
         return $this->localColumn;
     }
@@ -81,7 +95,6 @@ class Relation {
         $this->foreignColumn = $foreignColumn;
     }
 
-
     public function getEntity() {
         return $this->entity;
     }
@@ -89,7 +102,6 @@ class Relation {
     public function setEntity($entity) {
         $this->entity = $entity;
     }
-
 
 }
 

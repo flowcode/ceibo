@@ -10,6 +10,7 @@
                   localColumn="id_ovni" 
                   foreignColumn="id_weapon" 
                   cardinality="many-to-many"
+                  lazy="false"
                   onupdate="delete"
                   ondelete="cascade" />
     </entity>

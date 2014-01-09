@@ -261,19 +261,22 @@ class EntityManager {
             /* relations */
             foreach ($mapper->getRelations() as $relation) {
 
-                $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
+                /* only set relations if not lazy */
+                if (!$relation->isLazy()) {
+                    $relMapper = MapperBuilder::buildFromName($this->mapping, $relation->getEntity());
 
-                $queryRel = QueryBuilder::buildSelectRelation($relation, $relMapper);
+                    $queryRel = QueryBuilder::buildSelectRelation($relation, $relMapper);
 
-                $resRel = $this->getDataSource()->query($queryRel, array(":id" => $newEntity->getId()));
+                    $resRel = $this->getDataSource()->query($queryRel, array(":id" => $newEntity->getId()));
 
-                $method = "set" . $relation->getName();
-                if ($resRel) {
-                    $collection = new Collection($relMapper->getClass(), $resRel, $relMapper);
-                } else {
-                    $collection = new Collection($relMapper->getClass(), array(), $relMapper);
+                    $method = "set" . $relation->getName();
+                    if ($resRel) {
+                        $collection = new Collection($relMapper->getClass(), $resRel, $relMapper);
+                    } else {
+                        $collection = new Collection($relMapper->getClass(), array(), $relMapper);
+                    }
+                    $newEntity->$method($collection);
                 }
-                $newEntity->$method($collection);
             }
         }
         return $newEntity;
@@ -329,11 +332,11 @@ class EntityManager {
 
         $orderQuery = "";
         if (!is_null($orderColumn)) {
-            $query .= "ORDER BY $orderColumn ";
+            $orderQuery .= "ORDER BY $orderColumn ";
             if (!is_null($orderType)) {
-                $query .= "$orderType";
+                $orderQuery .= "$orderType";
             } else {
-                $query .= "ASC";
+                $orderQuery .= "ASC";
             }
         }
 
