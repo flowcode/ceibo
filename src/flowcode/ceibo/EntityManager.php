@@ -113,6 +113,8 @@ class EntityManager {
     }
 
     public function updateEntity($entity, $mapper) {
+        
+        
 
         $udateStatement = QueryBuilder::buildUpdateQuery($entity, $mapper);
         $values = array();
@@ -131,6 +133,10 @@ class EntityManager {
             /* update relations */
             foreach ($mapper->getRelations() as $relation) {
                 if ($relation->getCardinality() == Relation::$manyToMany) {
+                    
+                    $reflectionMethod = new ReflectionMethod(get_class($entity), "get" . $relation->getName());
+                    $actualValues = $reflectionMethod->invoke($entity);
+                    
                     // delete previous relations
                     $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation);
                     $conn->deleteSingleRow($queryDeletePrevious, array(":id" => $entity->getId()));
@@ -138,9 +144,8 @@ class EntityManager {
                     // insert new relations
                     $insertRelStmt = QueryBuilder::buildRelationQuery($entity, $relation);
                     $values = array();
-                    $m = "get" . $relation->getName();
                     $getid = "getId";
-                    foreach ($entity->$m() as $rel) {
+                    foreach ($actualValues as $rel) {
                         $valueRow = array();
                         $valueRow[":" . $relation->getLocalColumn()] = $entity->$getid();
                         $valueRow[":" . $relation->getForeignColumn()] = $rel->$getid();
