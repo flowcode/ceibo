@@ -9,8 +9,8 @@ use flowcode\ceibo\domain\Collection;
 use flowcode\ceibo\domain\Query;
 use flowcode\ceibo\domain\Relation;
 use flowcode\ceibo\EntityManager;
-use flowcode\wing\utils\Pager;
 use PDOException;
+use ReflectionMethod;
 
 /**
  * Description of EntityManager
@@ -113,8 +113,8 @@ class EntityManager {
     }
 
     public function updateEntity($entity, $mapper) {
-        
-        
+
+
 
         $udateStatement = QueryBuilder::buildUpdateQuery($entity, $mapper);
         $values = array();
@@ -133,10 +133,10 @@ class EntityManager {
             /* update relations */
             foreach ($mapper->getRelations() as $relation) {
                 if ($relation->getCardinality() == Relation::$manyToMany) {
-                    
+
                     $reflectionMethod = new ReflectionMethod(get_class($entity), "get" . $relation->getName());
                     $actualValues = $reflectionMethod->invoke($entity);
-                    
+
                     // delete previous relations
                     $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation);
                     $conn->deleteSingleRow($queryDeletePrevious, array(":id" => $entity->getId()));
@@ -323,7 +323,7 @@ class EntityManager {
      * @param string $relationName
      * @param string $orderColumn
      * @param string $orderType
-     * @return \flowcode\ceibo\domain\Collection
+     * @return Collection
      */
     public function findRelation($entity, $relationName, $orderColumn = null, $orderType = null) {
         $this->load();
