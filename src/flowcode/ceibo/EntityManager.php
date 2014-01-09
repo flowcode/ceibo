@@ -6,9 +6,11 @@ use flowcode\ceibo\builder\MapperBuilder;
 use flowcode\ceibo\builder\QueryBuilder;
 use flowcode\ceibo\data\DataSource;
 use flowcode\ceibo\domain\Collection;
+use flowcode\ceibo\domain\Query;
 use flowcode\ceibo\domain\Relation;
 use flowcode\ceibo\EntityManager;
 use flowcode\wing\utils\Pager;
+use PDOException;
 
 /**
  * Description of EntityManager
@@ -373,7 +375,8 @@ class EntityManager {
                 $query .= "ASC ";
             }
         }
-        $result = $this->getDataSource()->query($query);
+
+        $result = $this->getDataSource()->query($query, $values);
 
         if ($result) {
             $collection = new Collection($mapper->getClass(), $result, $mapper);
@@ -382,6 +385,17 @@ class EntityManager {
         }
 
         return $collection;
+    }
+
+    /**
+     * 
+     * @param type $name
+     * @return Query 
+     */
+    public function getQuery($name) {
+        $this->load();
+        $mapper = MapperBuilder::buildFromName($this->mapping, $name);
+        return new Query($mapper, $this->getDataSource());
     }
 
     /**
