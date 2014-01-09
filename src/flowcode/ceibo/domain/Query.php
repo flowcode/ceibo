@@ -33,20 +33,24 @@ class Query {
      * Add an And Where condition to the query.
      * @param string $condition
      * @param array $values
+     * @return Query same instace.
      */
     public function AndWhere($condition, array $values) {
         $this->andWheres[] = $condition;
         $this->addBindValues($values);
+        return $this;
     }
 
     /**
      * Set where condition of the query.
      * @param string $condition
      * @param array $values
+     * @return Query same instace.
      */
     public function Where($condition, $values) {
         $this->setWhere($condition);
         $this->addBindValues($values);
+        return $this;
     }
 
     public function buildStatement() {
