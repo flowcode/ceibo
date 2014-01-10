@@ -1,1 +1,6 @@
 /nbproject/private/
+/log/
+
+composer.lock
+composer.phar
+/vendor/
