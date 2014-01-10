@@ -9,6 +9,7 @@ use flowcode\ceibo\domain\Collection;
 use flowcode\ceibo\domain\Query;
 use flowcode\ceibo\domain\Relation;
 use flowcode\ceibo\EntityManager;
+use flowcode\wing\utils\Pager;
 use PDOException;
 use ReflectionMethod;
 
