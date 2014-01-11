@@ -385,7 +385,7 @@ class EntityManager {
             }
         }
 
-        $result = $this->getDataSource()->query($query, $values);
+        $result = $this->getDataSource()->query($query);
 
         if ($result) {
             $collection = new Collection($mapper->getClass(), $result, $mapper);
