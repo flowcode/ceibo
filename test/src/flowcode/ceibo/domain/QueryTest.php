@@ -24,8 +24,15 @@ class QueryTest extends \PHPUnit_Framework_TestCase {
         $this->ovniMapper->setName("ovni");
         $this->ovniMapper->setTable("ovni");
 
+        $dataSource = $this->getMock('flowcode\ceibo\data\PDOMySqlDataSource', array('executeNonQuery', 'executeQuery', 'executeInsert', 'escapeString'));
+        $dataSource->expects($this->any())
+                ->method('escapeString')
+                ->will($this->returnArgument(0));
+        $dataSource->expects($this->any())
+                ->method('executeInsert')
+                ->with($this->equalTo("INSERT INTO `ovni` (`name`) VALUES ('ovni1');"));
 
-        $this->object = new Query($this->ovniMapper);
+        $this->object = new Query($this->ovniMapper, $dataSource);
     }
 
     /**
@@ -38,27 +45,31 @@ class QueryTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @covers flowcode\ceibo\domain\Query::AndWhere
-     * @todo   Implement testAndWhere().
      */
     public function testAndWhere() {
-        // Remove the following lines when you implement this test.
-        $this->markTestIncomplete(
-                'This test has not been implemented yet.'
-        );
+        $this->object->AndWhere("id = :id", array(":id" => 1));
+        $this->object->AndWhere("name = :name", array(":name" => 1));
+        $this->object->AndWhere("description = :description", array(":description" => 1));
+
+        $this->assertEquals(3, count($this->object->getAndWheres()));
+        $this->assertEquals(3, count($this->object->getBindValues()));
+        
+        $bindValues = $this->object->getBindValues();
+        $this->assertEquals(1, $bindValues[":id"]);
     }
 
     /**
-     * @covers flowcode\ceibo\domain\Query::getString
-     * @todo   Implement testGetString().
+     * @covers flowcode\ceibo\domain\Query::buildStatement
      */
-    public function testGetString() {
+    public function testBuildStatement() {
 
-        $tag = "test";
-        $this->object->AndWhere("Tag.name = '$tag'");
+        $this->object->Where("name = :tag", array(":tag" => "test"));
+        $this->object->AndWhere("id = :id", array(":id" => 1));
 
-        $expectedQuery = "SELECT * FROM post p , post_tag pt, tag t WHERE 1=1 AND pt.id_post = p.id AND pt.id_tag = t.id AND t.name = '" . $tag . "' ";
+        $expectedQuery = "SELECT * FROM ovni WHERE name = :tag AND id = :id ";
 
-        $this->assertEquals($expectedQuery, $this->object->getString());
+        $this->assertEquals($expectedQuery, $this->object->buildStatement());
+        $this->assertEquals(2, count($this->object->getBindValues()));
     }
 
 }

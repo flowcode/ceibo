@@ -6,5 +6,5 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'flowcode' => array($baseDir . '/src'),
+    'flowcode' => array($baseDir . '/src', $vendorDir . '/flowcode/wing-utils/src'),
 );

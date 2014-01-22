@@ -6,9 +6,12 @@ use flowcode\ceibo\builder\MapperBuilder;
 use flowcode\ceibo\builder\QueryBuilder;
 use flowcode\ceibo\data\DataSource;
 use flowcode\ceibo\domain\Collection;
+use flowcode\ceibo\domain\Query;
 use flowcode\ceibo\domain\Relation;
 use flowcode\ceibo\EntityManager;
 use flowcode\wing\utils\Pager;
+use PDOException;
+use ReflectionMethod;
 
 /**
  * Description of EntityManager
@@ -112,6 +115,8 @@ class EntityManager {
 
     public function updateEntity($entity, $mapper) {
 
+
+
         $udateStatement = QueryBuilder::buildUpdateQuery($entity, $mapper);
         $values = array();
         $affectedRows = 0;
@@ -129,6 +134,10 @@ class EntityManager {
             /* update relations */
             foreach ($mapper->getRelations() as $relation) {
                 if ($relation->getCardinality() == Relation::$manyToMany) {
+
+                    $reflectionMethod = new ReflectionMethod(get_class($entity), "get" . $relation->getName());
+                    $actualValues = $reflectionMethod->invoke($entity);
+
                     // delete previous relations
                     $queryDeletePrevious = QueryBuilder::buildDeleteRelationQuery($relation);
                     $conn->deleteSingleRow($queryDeletePrevious, array(":id" => $entity->getId()));
@@ -136,9 +145,8 @@ class EntityManager {
                     // insert new relations
                     $insertRelStmt = QueryBuilder::buildRelationQuery($entity, $relation);
                     $values = array();
-                    $m = "get" . $relation->getName();
                     $getid = "getId";
-                    foreach ($entity->$m() as $rel) {
+                    foreach ($actualValues as $rel) {
                         $valueRow = array();
                         $valueRow[":" . $relation->getLocalColumn()] = $entity->$getid();
                         $valueRow[":" . $relation->getForeignColumn()] = $rel->$getid();
@@ -316,7 +324,7 @@ class EntityManager {
      * @param string $relationName
      * @param string $orderColumn
      * @param string $orderType
-     * @return \flowcode\ceibo\domain\Collection
+     * @return Collection
      */
     public function findRelation($entity, $relationName, $orderColumn = null, $orderType = null) {
         $this->load();
@@ -376,6 +384,7 @@ class EntityManager {
                 $query .= "ASC ";
             }
         }
+
         $result = $this->getDataSource()->query($query);
 
         if ($result) {
@@ -385,6 +394,17 @@ class EntityManager {
         }
 
         return $collection;
+    }
+
+    /**
+     * 
+     * @param type $name
+     * @return Query 
+     */
+    public function getQuery($name) {
+        $this->load();
+        $mapper = MapperBuilder::buildFromName($this->mapping, $name);
+        return new Query($mapper, $this->getDataSource());
     }
 
     /**
