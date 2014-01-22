@@ -46,8 +46,8 @@ class ScriptRunner {
     public function run($dbms_schema) {
         $success = false;
         $sql_query = @fread(@fopen($dbms_schema, 'r'), @filesize($dbms_schema)) or die('problem ');
-        $sql_query = remove_remarks($sql_query);
-        $sql_query = split_sql_file($sql_query, ';');
+        $sql_query = $this->remove_remarks($sql_query);
+        $sql_query = $this->split_sql_file($sql_query, ';');
         
         $i = 1;
         foreach ($sql_query as $sql) {
