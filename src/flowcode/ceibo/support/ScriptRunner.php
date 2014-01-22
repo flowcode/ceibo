@@ -48,18 +48,17 @@ class ScriptRunner {
         $sql_query = @fread(@fopen($dbms_schema, 'r'), @filesize($dbms_schema)) or die('problem ');
         $sql_query = $this->remove_remarks($sql_query);
         $sql_query = $this->split_sql_file($sql_query, ';');
-        
+
         $i = 1;
         foreach ($sql_query as $sql) {
-            $this->getDataSource()->query($sql) or die("error in query $i");
-//            mysql_query($sql) or die("error in query $i");
+            $this->getDataSource()->query($sql);
             $i++;
         }
         $success = true;
         return $success;
     }
 
-    function remove_comments(&$output) {
+    private function remove_comments(&$output) {
         $lines = explode("\n", $output);
         $output = "";
 
@@ -90,7 +89,7 @@ class ScriptRunner {
      * @param string $sql
      * @return string
      */
-    function remove_remarks($sql) {
+    private function remove_remarks($sql) {
         $lines = explode("\n", $sql);
 
         // try to keep mem. use down
@@ -121,7 +120,7 @@ class ScriptRunner {
      * @param type $delimiter
      * @return string
      */
-    function split_sql_file($sql, $delimiter) {
+    private function split_sql_file($sql, $delimiter) {
         // Split up our string into "possible" SQL statements.
         $tokens = explode($delimiter, $sql);
 
