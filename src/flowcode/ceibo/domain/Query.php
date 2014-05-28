@@ -17,6 +17,7 @@ class Query {
     private $dataSource = null;
     private $where = null;
     private $andWheres = array();
+    private $orders = array();
     private $bindValues = array();
 
     /**
@@ -42,6 +43,23 @@ class Query {
     }
 
     /**
+     * Order by a field.
+     * @param string $condition
+     * @param array $values
+     * @return Query same instace.
+     */
+    public function orderBy($field, $direction = NULL) {
+        $order["field"] = $field;
+        if (is_null($direction)) {
+            $order["direction"] = "ASC";
+        } else {
+            $order["direction"] = $direction;
+        }
+        $this->orders[] = $order;
+        return $this;
+    }
+
+    /**
      * Set where condition of the query.
      * @param string $condition
      * @param array $values
@@ -61,6 +79,15 @@ class Query {
             foreach ($this->getAndWheres() as $andWhere) {
                 $statement .= "AND " . $andWhere . " ";
             }
+        }
+
+        foreach ($this->getOrders() as $index => $order) {
+            if ($index == 0) {
+                $statement .= "ORDER BY ";
+            } else {
+                $statement .= ", ";
+            }
+            $statement .= $order["field"] . " " . $order["direction"];
         }
 
         return $statement;
@@ -138,6 +165,14 @@ class Query {
         foreach ($bindValues as $bindKey => $bindValue) {
             $this->bindValues[$bindKey] = $bindValue;
         }
+    }
+
+    public function getOrders() {
+        return $this->orders;
+    }
+
+    public function setOrders($orders) {
+        $this->orders = $orders;
     }
 
 }

@@ -57,6 +57,17 @@ class QueryTest extends \PHPUnit_Framework_TestCase {
         $bindValues = $this->object->getBindValues();
         $this->assertEquals(1, $bindValues[":id"]);
     }
+    
+    /**
+     * @covers flowcode\ceibo\domain\Query::orderBy
+     */
+    public function testOrderBy() {
+        $this->object->orderBy("name");
+        $this->object->orderBy("name", "DESC");
+
+        $stmt = $this->object->buildStatement();
+        $this->assertEquals("SELECT * FROM ovni ORDER BY name ASC, name DESC", $stmt);
+    }
 
     /**
      * @covers flowcode\ceibo\domain\Query::buildStatement
